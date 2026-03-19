@@ -1,0 +1,227 @@
+// TourismOS — Prisma schema (MVP bookings + auth/org only)
+// Keeps Better Auth models + organization multi-tenancy.
+// Booking inbox MVP models are tenant-scoped by `organizationId`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── App enums (user) ───────────────────────────────────────────────────────
+enum UserRole {
+  partner
+  superadmin
+}
+
+enum UserStatus {
+  disabled // pending admin approval
+  enabled // can access /producer
+}
+
+// ─── Better Auth (core) ─────────────────────────────────────────────────────
+model User {
+  id               String     @id @default(cuid())
+  name             String
+  email            String     @unique
+  emailVerified    Boolean    @default(false)
+  image            String?
+  role             UserRole   @default(partner)
+  status           UserStatus @default(disabled) // first user set enabled + superadmin
+  profileCompleted Boolean    @default(false)     // onboarding done
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  sessions         Session[]
+  accounts         Account[]
+  members          Member[]
+  profile          Profile?
+
+  @@map("user")
+}
+
+// Onboarding / partner profile (filled after email verification)
+model Profile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName          String
+  lastName           String
+  phone              String
+  entityType         String // Individual Producer | Cooperative | Company / SARL | Association
+  entityName         String
+  registrationNumber String?
+  region             String
+  city               String
+  yearEstablished    String?
+  website            String?
+  categories         Json // string[] product category labels
+  annualCapacity     String?
+  exportExperience   String?
+  agreeTerms         Boolean  @default(true)
+  agreeMarketing     Boolean  @default(false)
+  profileImage       String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("profile")
+}
+
+model Session {
+  id                     String   @id @default(cuid())
+  expiresAt              DateTime
+  token                  String   @unique
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  ipAddress              String?
+  userAgent              String?
+  userId                 String
+  activeOrganizationId   String?
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@map("verification")
+}
+
+// ─── Better Auth Organization plugin (multi-tenant) ───────────────────────────
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  logo      String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members       Member[]
+  invitations   Invitation[]
+
+  // App tenant-scoped relations
+  customers Customer[]
+  bookings  Booking[]
+
+  @@map("organization")
+}
+
+model Member {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  role           String // owner | admin | member (or custom)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@map("member")
+}
+
+model Invitation {
+  id             String   @id @default(cuid())
+  organizationId String
+  email          String
+  role           String
+  status         String // pending | accepted | rejected | cancelled
+  expiresAt      DateTime
+  createdAt      DateTime? @default(now())
+  updatedAt      DateTime? @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("invitation")
+}
+
+// ─── Booking inbox MVP (tenant-scoped) ───────────────────────────────────────
+model Customer {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  phone          String
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  bookings     Booking[]
+
+  @@index([organizationId])
+  @@index([phone])
+  @@map("customer")
+}
+
+model Booking {
+  id             String   @id @default(cuid())
+  organizationId String
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  activityTitle String
+  startAt       DateTime
+  peopleCount   Int
+  priceCents    Int
+
+  // Inbox status
+  status        String @default("NEW") // NEW | PENDING | CONFIRMED | CANCELLED
+
+  // Payment status (MVP)
+  paymentStatus String @default("UNPAID") // UNPAID | DEPOSIT | PAID
+  depositCents  Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  messages     BookingMessage[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([startAt])
+  @@map("booking")
+}
+
+model BookingMessage {
+  id        String   @id @default(cuid())
+  bookingId String
+  sender    String // CUSTOMER | OPERATOR
+  body      String  @db.Text
+  createdAt DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@map("booking_message")
+}
+

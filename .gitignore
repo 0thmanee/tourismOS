@@ -1,0 +1,52 @@
+# Git repo root: ignores apply to the whole repo, including the Next.js app in ./project
+
+# dependencies
+/project/node_modules
+/project/.pnp
+/project/.pnp.js
+
+# testing
+/project/coverage
+
+# database (dev only)
+/project/prisma/db.sqlite
+/project/prisma/db.sqlite-journal
+/project/db.sqlite
+
+# next.js
+/project/.next/
+/project/out/
+/project/next-env.d.ts
+
+# production builds
+/project/build
+/project/dist
+
+# misc
+/project/.DS_Store
+/project/*.pem
+
+# debug logs
+/project/npm-debug.log*
+/project/yarn-debug.log*
+/project/yarn-error.log*
+/project/.pnpm-debug.log*
+
+# local env files
+/project/.env
+/project/.env*.local
+
+# vercel
+/project/.vercel
+
+# typescript
+/project/*.tsbuildinfo
+
+# idea files
+/project/.idea
+
+# generated artifacts
+/project/generated/prisma
+
+# root misc
+.DS_Store
