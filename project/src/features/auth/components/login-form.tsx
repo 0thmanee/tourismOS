@@ -84,13 +84,7 @@ export function LoginForm() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {error && (
-            <div
-              className="rounded-xl px-4 py-3 font-sans text-sm text-[#f87171] space-y-2"
-              style={{
-                background: "rgba(248,113,113,0.1)",
-                border: "1px solid rgba(248,113,113,0.25)",
-              }}
-            >
+            <div className="rounded-xl px-4 py-3 font-sans text-sm auth-error space-y-2">
               <p>{error}</p>
               {needsVerification && email && (
                 <button

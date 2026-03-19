@@ -1,98 +1,42 @@
 import React from "react";
-
-function IconTwitter() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path
-        d="M13 2L9 7l4.5 7H11L8 9.5 4.5 14H2l4.5-7L2 2h2.5L8 6.5 11.5 2H13z"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function IconLinkedIn() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect
-        x="2"
-        y="2"
-        width="12"
-        height="12"
-        rx="2.5"
-        stroke="currentColor"
-        strokeWidth="1.3"
-      />
-      <path
-        d="M5 7v4M5 5v.5"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-      <path
-        d="M8 11V8.5c0-1 .5-1.5 1.5-1.5S11 7.5 11 8.5V11"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function IconInstagram() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect
-        x="2"
-        y="2"
-        width="12"
-        height="12"
-        rx="3"
-        stroke="currentColor"
-        strokeWidth="1.3"
-      />
-      <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.3" />
-      <circle cx="11.5" cy="4.5" r="0.6" fill="currentColor" />
-    </svg>
-  );
-}
+import { Instagram, Linkedin, Twitter } from "lucide-react";
 
 const navCols = [
   {
-    label: "Platform",
+    label: "Product",
     links: [
-      "How it works",
-      "Inbox",
-      "Calendar",
-      "Bookings",
-      "Payments",
+      { label: "Inbox", href: "#inbox" },
+      { label: "Bookings", href: "#bookings" },
+      { label: "Payments", href: "#payments" },
+      { label: "Calendar", href: "#features" },
     ],
   },
   {
-    label: "For Partners",
+    label: "Operators",
     links: [
-      "Apply as Operator",
-      "Join as Cooperative",
-      "Operator Portal",
-      "Get Started",
-      "Pricing",
+      { label: "How it works", href: "#how-it-works" },
+      { label: "Get started", href: "/producer/inbox?new=1" },
+      { label: "FAQ", href: "#faq" },
+      { label: "Operator Inbox MVP", href: "/producer/inbox" },
     ],
   },
   {
-    label: "For Buyers",
+    label: "Support",
     links: [
-      "Browse Experiences",
-      "Request a booking",
-      "Verified operators",
-      "Category guide",
+      { label: "FAQ", href: "#faq" },
+      { label: "Contact support", href: "#faq" },
+      { label: "Release notes", href: "#features" },
+      { label: "Changelog", href: "#features" },
     ],
   },
   {
     label: "Company",
-    links: ["About Us", "Press & Media", "Investors", "Careers", "Contact"],
+    links: [
+      { label: "About", href: "#features" },
+      { label: "Pricing", href: "#features" },
+      { label: "Contact", href: "#faq" },
+      { label: "Careers", href: "#features" },
+    ],
   },
 ];
 
@@ -124,18 +68,14 @@ export default function Footer() {
             {/* Social icons */}
             <div className="flex items-center gap-2">
               {[
-                <IconTwitter key="tw" />,
-                <IconLinkedIn key="li" />,
-                <IconInstagram key="ig" />,
+                <Twitter key="tw" size={16} aria-hidden />,
+                <Linkedin key="li" size={16} aria-hidden />,
+                <Instagram key="ig" size={16} aria-hidden />,
               ].map((icon, i) => (
                 <a
                   key={i}
                   href="#"
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white/40 hover:text-white/70 transition-colors"
-                  style={{
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white/40 hover:text-white/70 transition-colors footer-iconbtn"
                 >
                   {icon}
                 </a>
@@ -153,11 +93,11 @@ export default function Footer() {
                 <div className="flex flex-col gap-3">
                   {col.links.map((link) => (
                     <a
-                      key={link}
-                      href="#"
+                      key={link.href}
+                      href={link.href}
                       className="font-sans text-sm text-white/45 hover:text-white/75 transition-colors leading-none"
                     >
-                      {link}
+                      {link.label}
                     </a>
                   ))}
                 </div>

@@ -9,9 +9,6 @@ function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase() || "?";
 }
 
-const FALLBACK_GRADIENT =
-  "linear-gradient(in oklab 135deg, oklab(36% -0.059 0.022) 0%, oklab(47.6% -0.074 0.024) 100%)";
-
 type Props = {
   displayName: string;
   imageUrl?: string | null;
@@ -51,10 +48,7 @@ export function Avatar({
 
   return (
     <div
-      className={`rounded-full flex items-center justify-center font-sans font-bold text-white shrink-0 ${sizeClass} ${borderClass} ${className}`}
-      style={{
-        background: isHeader ? FALLBACK_GRADIENT : FALLBACK_GRADIENT,
-      }}
+      className={`rounded-full flex items-center justify-center font-sans font-bold text-white shrink-0 avatar-fallback ${sizeClass} ${borderClass} ${className}`}
     >
       {initials}
     </div>

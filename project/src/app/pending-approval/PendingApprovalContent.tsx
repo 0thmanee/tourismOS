@@ -2,30 +2,13 @@
 
 import Link from "next/link";
 import { signOut } from "~/lib/auth-client";
+import { Clock } from "lucide-react";
 
 export function PendingApprovalContent() {
   return (
     <div className="relative z-10 flex flex-col items-center text-center max-w-md gap-6">
-      <div
-        className="w-20 h-20 rounded-full flex items-center justify-center"
-        style={{
-          background: "rgba(201,145,61,0.15)",
-          border: "1px solid rgba(201,145,61,0.35)",
-        }}
-      >
-        <svg
-          width="36"
-          height="36"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#C9913D"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 6v6l4 2" />
-        </svg>
+      <div className="w-20 h-20 rounded-full flex items-center justify-center auth-badge">
+        <Clock size={36} aria-hidden />
       </div>
       <div>
         <h1 className="font-serif font-bold text-[28px] text-white leading-tight">

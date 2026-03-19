@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { inputCls, inputStyle, inputFocusStyle } from "./auth-layout";
+import React from "react";
+import { inputCls } from "./auth-layout";
 
 type AuthInputProps = {
   type?: string;
@@ -24,7 +24,6 @@ export function AuthInput({
   minLength,
   autoComplete,
 }: AuthInputProps) {
-  const [focused, setFocused] = useState(false);
   return (
     <input
       type={type}
@@ -32,10 +31,7 @@ export function AuthInput({
       placeholder={placeholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
       className={inputCls}
-      style={focused ? inputFocusStyle : inputStyle}
       required={required}
       minLength={minLength}
       autoComplete={autoComplete}

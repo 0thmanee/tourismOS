@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signUp } from "~/lib/auth-client";
 import { AuthLayout, AuthInput, AuthField } from "~/features/auth";
 import { RegisterVerifyEmail } from "./register-verify-email";
+import { Check } from "lucide-react";
 
 export function RegisterForm() {
   const [name, setName] = useState("");
@@ -76,15 +77,9 @@ export function RegisterForm() {
           </AuthField>
           <label className="flex items-start gap-3 cursor-pointer">
             <div
-              className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors"
-              style={
-                agreeTerms
-                  ? { background: "#C9913D", border: "1px solid #C9913D" }
-                  : {
-                      background: "rgba(255,255,255,0.06)",
-                      border: "1px solid rgba(255,255,255,0.15)",
-                    }
-              }
+              className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors border ${
+                agreeTerms ? "bg-gold border-gold" : "auth-input"
+              }`}
               onClick={() => setAgreeTerms(!agreeTerms)}
               onKeyDown={(e) => e.key === "Enter" && setAgreeTerms(!agreeTerms)}
               role="button"
@@ -92,18 +87,7 @@ export function RegisterForm() {
               aria-checked={agreeTerms}
             >
               {agreeTerms && (
-                <svg
-                  width="10"
-                  height="10"
-                  viewBox="0 0 10 10"
-                  fill="none"
-                  stroke="#0D2818"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M2 5l2 2 4-4" />
-                </svg>
+                <Check size={12} className="text-forest-dark" aria-hidden />
               )}
             </div>
             <span className="font-sans text-[13px] text-white/60 leading-relaxed">
@@ -114,13 +98,7 @@ export function RegisterForm() {
         </div>
 
         {submitError && (
-          <div
-            className="rounded-xl px-4 py-3 font-sans text-sm text-[#f87171]"
-            style={{
-              background: "rgba(248,113,113,0.1)",
-              border: "1px solid rgba(248,113,113,0.25)",
-            }}
-          >
+          <div className="rounded-xl px-4 py-3 font-sans text-sm auth-error">
             {submitError}
           </div>
         )}
@@ -147,16 +125,9 @@ export function RegisterForm() {
               }
               setSubmitted(true);
             }}
-            className="font-sans font-semibold text-sm rounded-xl px-8 py-3.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed w-full"
-            style={
-              canSubmit && !submitting
-                ? { background: "#C9913D", color: "#0D2818" }
-                : {
-                    background: "rgba(201,145,61,0.2)",
-                    color: "rgba(201,145,61,0.4)",
-                    cursor: "not-allowed",
-                  }
-            }
+            className={`font-sans font-semibold text-sm rounded-xl px-8 py-3.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed w-full btn ${
+              canSubmit && !submitting ? "btn-accent" : "btn-ghost"
+            }`}
           >
             {submitting ? "Creating account…" : "Create account"}
           </button>

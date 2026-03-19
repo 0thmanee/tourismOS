@@ -12,7 +12,7 @@ export function ProfileSideCards({ partnerId, partnerSince }: CertificationCardP
   // MVP: keep profile sidebar lightweight.
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-xl overflow-hidden" style={{ background: "#0D2818" }}>
+      <div className="rounded-xl overflow-hidden bg-forest-dark">
         <div className="px-5 py-4 border-b border-white/8">
           <h3 className="font-serif font-bold text-[15px] text-white">Your partner status</h3>
           <p className="font-sans text-[11px] text-white/40 mt-0.5">Bookings inbox is ready (MVP)</p>
@@ -29,8 +29,7 @@ export function ProfileSideCards({ partnerId, partnerSince }: CertificationCardP
 
           <Link
             href="/producer/inbox"
-            className="w-full font-sans text-[12px] font-semibold rounded-xl py-2 transition-colors text-center block"
-            style={{ background: "rgba(74,222,128,0.12)", color: "#4ADE80", border: "1px solid rgba(74,222,128,0.2)" }}
+            className="w-full font-sans text-[12px] font-semibold rounded-xl py-2 transition-colors text-center block border bg-zellige-teal/15 text-zellige-teal border-zellige-teal/20 hover:bg-zellige-teal/20"
           >
             Go to Inbox
           </Link>

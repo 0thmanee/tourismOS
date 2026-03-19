@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
 import { useSession, signOut } from "~/lib/auth-client";
+import { ChevronDown } from "lucide-react";
 
 export default function Navbar() {
   const { data: session, isPending } = useSession();
@@ -24,18 +25,18 @@ export default function Navbar() {
 
         <div className="hidden md:flex items-center gap-8">
           {[
-            "How it works",
-            "Inbox",
-            "Calendar",
-            "Bookings",
-            "About",
+            { label: "How it works", href: "#how-it-works" },
+            { label: "Inbox", href: "#inbox" },
+            { label: "Bookings", href: "#bookings" },
+            { label: "Payments", href: "#payments" },
+            { label: "FAQ", href: "#faq" },
           ].map((item) => (
             <a
-              key={item}
-              href="#"
+              key={item.href}
+              href={item.href}
               className="font-sans text-sm text-text-muted hover:text-text-dark transition-colors"
             >
-              {item}
+              {item.label}
             </a>
           ))}
         </div>
@@ -62,21 +63,7 @@ export default function Navbar() {
                 <span className="max-w-[100px] truncate hidden sm:inline">
                   {session.user.name ?? session.user.email}
                 </span>
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  className={menuOpen ? "rotate-180" : ""}
-                >
-                  <path
-                    d="M2.5 4.5L6 8l3.5-3.5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <ChevronDown className={menuOpen ? "rotate-180" : ""} size={14} aria-hidden />
               </button>
               {menuOpen && (
                 <>

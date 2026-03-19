@@ -41,27 +41,27 @@ function formatDateTime(value: Date | string) {
   }).format(d);
 }
 
-function getStatusStyle(status: BookingStatus): { background: string; color: string; border: string } {
+function getStatusBadgeClass(status: BookingStatus): string {
   switch (status) {
     case "NEW":
-      return { background: "rgba(59,130,246,0.12)", color: "#3B82F6", border: "1px solid rgba(59,130,246,0.25)" };
+      return "badge badge-new";
     case "PENDING":
-      return { background: "rgba(234,179,8,0.12)", color: "#EAB308", border: "1px solid rgba(234,179,8,0.25)" };
+      return "badge badge-pending";
     case "CONFIRMED":
-      return { background: "rgba(74,222,128,0.14)", color: "#4ADE80", border: "1px solid rgba(74,222,128,0.25)" };
+      return "badge badge-confirmed";
     case "CANCELLED":
-      return { background: "rgba(248,113,113,0.12)", color: "#F87171", border: "1px solid rgba(248,113,113,0.25)" };
+      return "badge badge-cancelled";
   }
 }
 
-function getPaymentStyle(paymentStatus: PaymentStatus): { background: string; color: string; border: string } {
+function getPaymentBadgeClass(paymentStatus: PaymentStatus): string {
   switch (paymentStatus) {
     case "UNPAID":
-      return { background: "rgba(74,222,128,0.06)", color: "#4a6358", border: "1px solid rgba(74,222,128,0.12)" };
+      return "badge";
     case "DEPOSIT":
-      return { background: "rgba(234,179,8,0.12)", color: "#EAB308", border: "1px solid rgba(234,179,8,0.25)" };
+      return "badge badge-pending";
     case "PAID":
-      return { background: "rgba(74,222,128,0.14)", color: "#4ADE80", border: "1px solid rgba(74,222,128,0.25)" };
+      return "badge badge-confirmed";
   }
 }
 
@@ -98,19 +98,17 @@ function ModalShell({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0"
-        style={{ background: "rgba(0,0,0,0.35)" }}
+        className="absolute inset-0 bg-black/40"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-[520px]" style={{ background: "white", border: "1px solid #E8EDE9", borderRadius: 16 }}>
-        <div className="px-6 py-4 border-b" style={{ borderColor: "#E8EDE9" }}>
+      <div className="relative w-full max-w-[520px] rounded-2xl card">
+        <div className="px-6 py-4 border-b border-(--app-border)">
           <div className="flex items-center justify-between gap-3">
-            <h3 className="font-serif font-bold text-[16px] text-[#1c3a28]">{title}</h3>
+            <h3 className="font-serif font-bold text-[16px] text-(--text-1)">{title}</h3>
             <button
               type="button"
               onClick={onClose}
-              className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
-              style={{ background: "#F5F0E8", color: "#1c3a28", border: "1px solid #E8EDE9" }}
+              className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors btn btn-ghost border-accent"
             >
               <span className="text-lg leading-none">X</span>
             </button>
@@ -137,14 +135,13 @@ function Input({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="font-sans text-sm font-semibold text-[#4a6358]">{label}</span>
+      <span className="font-sans text-sm font-semibold text-(--text-2)">{label}</span>
       <input
         value={value}
         type={type}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="rounded-xl px-4 py-2"
-        style={{ background: "#F5F0E8", border: "1px solid #E8EDE9" }}
+        className="rounded-xl px-4 py-2 field"
       />
     </label>
   );
@@ -163,14 +160,13 @@ function TextArea({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="font-sans text-sm font-semibold text-[#4a6358]">{label}</span>
+      <span className="font-sans text-sm font-semibold text-(--text-2)">{label}</span>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="rounded-xl px-4 py-2"
+        className="rounded-xl px-4 py-2 field"
         rows={3}
-        style={{ background: "#F5F0E8", border: "1px solid #E8EDE9" }}
       />
     </label>
   );
@@ -240,24 +236,18 @@ export function InboxView() {
   const [depositMad, setDepositMad] = useState<number>(0);
 
   function statusBadge(status: BookingStatus) {
-    const style = getStatusStyle(status);
+    const cls = getStatusBadgeClass(status);
     return (
-      <span
-        className="font-sans text-[10px] font-bold tracking-wide rounded-full px-2.5 py-1 uppercase"
-        style={style}
-      >
+      <span className={`font-sans text-[10px] font-bold tracking-wide rounded-full px-2.5 py-1 uppercase ${cls}`}>
         {status}
       </span>
     );
   }
 
   function paymentBadge(paymentStatus: PaymentStatus) {
-    const style = getPaymentStyle(paymentStatus);
+    const cls = getPaymentBadgeClass(paymentStatus);
     return (
-      <span
-        className="font-sans text-[10px] font-bold tracking-wide rounded-full px-2.5 py-1 uppercase"
-        style={style}
-      >
+      <span className={`font-sans text-[10px] font-bold tracking-wide rounded-full px-2.5 py-1 uppercase ${cls}`}>
         {paymentStatus}
       </span>
     );
@@ -322,8 +312,8 @@ export function InboxView() {
   function renderConversation(messages: Array<{ id: string; sender: BookingMessageSender; body: string; createdAt: Date | string }>) {
     if (!messages.length) {
       return (
-        <div className="rounded-xl p-4" style={{ background: "#F5F0E8", border: "1px solid #E8EDE9" }}>
-          <p className="font-sans text-sm text-[#4a6358]">No messages yet. Send the first message below.</p>
+        <div className="rounded-xl p-4 field">
+          <p className="font-sans text-sm text-(--text-2)">No messages yet. Send the first message below.</p>
         </div>
       );
     }
@@ -333,19 +323,17 @@ export function InboxView() {
         {messages.map((m) => (
           <div
             key={m.id}
-            className="flex"
-            style={{ justifyContent: m.sender === "OPERATOR" ? "flex-end" : "flex-start" }}
+            className={`flex ${m.sender === "OPERATOR" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className="rounded-2xl px-4 py-3 max-w-[80%]"
-              style={{
-                background: m.sender === "OPERATOR" ? "#0D2818" : "#FFFFFF",
-                border: m.sender === "OPERATOR" ? "1px solid rgba(13,40,24,0.3)" : "1px solid #E8EDE9",
-                color: m.sender === "OPERATOR" ? "white" : "#1c3a28",
-              }}
+              className={`rounded-2xl px-4 py-3 max-w-[80%] border ${
+                m.sender === "OPERATOR"
+                  ? "bg-forest-dark text-white border-white/10"
+                  : "card text-(--text-1)"
+              }`}
             >
               <p className="font-sans text-sm font-semibold">{m.body}</p>
-              <p className="font-sans text-[10px] mt-1" style={{ color: m.sender === "OPERATOR" ? "rgba(255,255,255,0.7)" : "#4a6358" }}>
+              <p className={`font-sans text-[10px] mt-1 ${m.sender === "OPERATOR" ? "text-white/70" : "text-(--text-2)"}`}>
                 {formatDateTime(m.createdAt)}
               </p>
             </div>
@@ -359,72 +347,66 @@ export function InboxView() {
     <div className="p-4 lg:p-6 flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex flex-col">
-          <h2 className="font-serif font-bold text-[18px] text-[#1c3a28]">Inbox</h2>
-          <p className="font-sans text-sm text-[#4a6358] mt-1">
+          <h2 className="font-serif font-bold text-[18px] text-(--text-1)">Inbox</h2>
+          <p className="font-sans text-sm text-(--text-2) mt-1">
             Your booking conversations, organized (by status).
           </p>
         </div>
         <button
           type="button"
           onClick={() => setCreateOpen(true)}
-          className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors"
-          style={{ background: "#0D2818", color: "white" }}
+          className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors btn producer-new-booking"
         >
           + New Booking
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4">
-        <div className="rounded-xl overflow-hidden" style={{ background: "white", border: "1px solid #E8EDE9" }}>
-          <div className="px-4 py-3 border-b" style={{ borderColor: "#E8EDE9" }}>
-            <p className="font-sans text-[11px] font-bold tracking-wide text-[#4a6358] uppercase">Conversations</p>
+        <div className="rounded-xl overflow-hidden card">
+          <div className="px-4 py-3 border-b border-(--app-border)">
+            <p className="font-sans text-[11px] font-bold tracking-wide text-(--text-2) uppercase">Conversations</p>
           </div>
           {isLoading ? (
-            <div className="p-6 text-center font-sans text-sm text-[#4a6358]">Loading…</div>
+            <div className="p-6 text-center font-sans text-sm text-(--text-2)">Loading…</div>
           ) : bookings.length === 0 ? (
             <div className="p-6 text-center flex flex-col gap-2">
-              <p className="font-sans text-sm text-[#4a6358]">No bookings yet.</p>
-              <p className="font-sans text-xs text-[#4a6358]">Create the first one with “New Booking”.</p>
+              <p className="font-sans text-sm text-(--text-2)">No bookings yet.</p>
+              <p className="font-sans text-xs text-(--text-2)">Create the first one with “New Booking”.</p>
             </div>
           ) : (
             <div className="flex flex-col">
               {bookings.map((b) => {
                 const active = b.id === selectedBookingId;
-                const badgeStyle = getStatusStyle(b.status);
+                const badgeClass = getStatusBadgeClass(b.status);
                 return (
                   <button
                     key={b.id}
                     type="button"
                     onClick={() => setSelectedBookingId(b.id)}
-                    className="text-left px-4 py-3 border-b last:border-b-0 transition-colors"
-                    style={{
-                      borderColor: "#E8EDE9",
-                      background: active ? "rgba(201,145,61,0.12)" : "transparent",
-                    }}
+                    className={`text-left px-4 py-3 border-b border-(--app-border) last:border-b-0 transition-colors ${
+                      active ? "bg-gold/10" : "bg-transparent"
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-9 h-9 rounded-xl flex items-center justify-center font-sans font-bold text-xs shrink-0"
-                        style={{
-                          background: active ? "#C9913D" : "#4a63581A",
-                          color: active ? "white" : "#4a6358",
-                        }}
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center font-sans font-bold text-xs shrink-0 ${
+                          active ? "bg-gold text-forest-dark" : "bg-black/5 text-(--text-2)"
+                        }`}
                       >
                         {initialsFromName(b.customerName || "—")}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="font-sans font-semibold text-sm text-[#1c3a28] truncate">
+                          <p className="font-sans font-semibold text-sm text-(--text-1) truncate">
                             {b.customerName} - {b.activityTitle}
                           </p>
                         </div>
-                        <p className="font-sans text-[11px] text-[#4a6358] mt-1">
+                        <p className="font-sans text-[11px] text-(--text-2) mt-1">
                           {formatDateTime(b.startAt)}
                         </p>
                       </div>
                       <span
-                        className="font-sans text-[10px] font-bold tracking-wide rounded-full px-2.5 py-1 uppercase"
-                        style={badgeStyle}
+                        className={`font-sans text-[10px] font-bold tracking-wide rounded-full px-2.5 py-1 uppercase ${badgeClass}`}
                       >
                         {b.status}
                       </span>
@@ -436,9 +418,9 @@ export function InboxView() {
           )}
         </div>
 
-        <div className="rounded-xl overflow-hidden" style={{ background: "white", border: "1px solid #E8EDE9" }}>
-          <div className="px-4 py-3 border-b flex items-center justify-between gap-3" style={{ borderColor: "#E8EDE9" }}>
-            <p className="font-sans text-[11px] font-bold tracking-wide text-[#4a6358] uppercase">Booking details</p>
+        <div className="rounded-xl overflow-hidden card">
+          <div className="px-4 py-3 border-b border-(--app-border) flex items-center justify-between gap-3">
+            <p className="font-sans text-[11px] font-bold tracking-wide text-(--text-2) uppercase">Booking details</p>
             {selectedBooking && (
               <div className="flex items-center gap-2 flex-wrap justify-end">
                 {statusBadge(selectedBooking.status)}
@@ -448,37 +430,37 @@ export function InboxView() {
           </div>
 
           {isDetailLoading ? (
-            <div className="p-6 text-center font-sans text-sm text-[#4a6358]">Loading details…</div>
+            <div className="p-6 text-center font-sans text-sm text-(--text-2)">Loading details…</div>
           ) : !selectedBooking ? (
             <div className="p-6 text-center">
-              <p className="font-sans text-sm text-[#4a6358]">Select a conversation to see details.</p>
+              <p className="font-sans text-sm text-(--text-2)">Select a conversation to see details.</p>
             </div>
           ) : (
             <div className="p-5 flex flex-col gap-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="rounded-xl p-4" style={{ background: "#F5F0E8", border: "1px solid #E8EDE9" }}>
-                  <p className="font-sans text-xs uppercase tracking-wide font-bold text-[#4a6358]">Customer</p>
-                  <p className="font-serif font-bold text-[16px] text-[#1c3a28] mt-2">{selectedBooking.customerName}</p>
-                  <p className="font-sans text-sm text-[#4a6358] mt-1">{selectedBooking.customerPhone}</p>
+                <div className="rounded-xl p-4 field">
+                  <p className="font-sans text-xs uppercase tracking-wide font-bold text-(--text-2)">Customer</p>
+                  <p className="font-serif font-bold text-[16px] text-(--text-1) mt-2">{selectedBooking.customerName}</p>
+                  <p className="font-sans text-sm text-(--text-2) mt-1">{selectedBooking.customerPhone}</p>
                 </div>
-                <div className="rounded-xl p-4" style={{ background: "#F5F0E8", border: "1px solid #E8EDE9" }}>
-                  <p className="font-sans text-xs uppercase tracking-wide font-bold text-[#4a6358]">Activity</p>
-                  <p className="font-serif font-bold text-[16px] text-[#1c3a28] mt-2">{selectedBooking.activityTitle}</p>
-                  <p className="font-sans text-sm text-[#4a6358] mt-1">
+                <div className="rounded-xl p-4 field">
+                  <p className="font-sans text-xs uppercase tracking-wide font-bold text-(--text-2)">Activity</p>
+                  <p className="font-serif font-bold text-[16px] text-(--text-1) mt-2">{selectedBooking.activityTitle}</p>
+                  <p className="font-sans text-sm text-(--text-2) mt-1">
                     {formatDateTime(selectedBooking.startAt)} · {selectedBooking.peopleCount} people
                   </p>
                 </div>
               </div>
 
-              <div className="rounded-xl p-4" style={{ background: "white", border: "1px solid #E8EDE9" }}>
+              <div className="rounded-xl p-4 card">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div>
-                    <p className="font-sans text-xs uppercase tracking-wide font-bold text-[#4a6358]">Price</p>
-                    <p className="font-serif font-bold text-[18px] text-[#1c3a28] mt-2">{formatMad(selectedBooking.priceCents)}</p>
+                    <p className="font-sans text-xs uppercase tracking-wide font-bold text-(--text-2)">Price</p>
+                    <p className="font-serif font-bold text-[18px] text-(--text-1) mt-2">{formatMad(selectedBooking.priceCents)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-sans text-xs uppercase tracking-wide font-bold text-[#4a6358]">Deposit</p>
-                    <p className="font-sans text-sm text-[#4a6358] mt-2">
+                    <p className="font-sans text-xs uppercase tracking-wide font-bold text-(--text-2)">Deposit</p>
+                    <p className="font-sans text-sm text-(--text-2) mt-2">
                       {selectedBooking.paymentStatus === "UNPAID"
                         ? "Not marked yet"
                         : selectedBooking.paymentStatus === "DEPOSIT"
@@ -491,14 +473,13 @@ export function InboxView() {
                 </div>
               </div>
 
-              <div className="sticky top-4 rounded-xl px-4 py-3" style={{ background: "white", border: "1px solid #E8EDE9" }}>
+              <div className="sticky top-4 rounded-xl px-4 py-3 card">
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     disabled={confirmMutation.isPending || selectedBooking.status === "CONFIRMED" || selectedBooking.status === "CANCELLED"}
                     onClick={() => confirmMutation.mutate({ bookingId: selectedBooking.id, status: "CONFIRMED" })}
-                    className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors"
-                    style={{ background: "#EDF4EF", color: "#1A4731", border: "1px solid rgba(74,222,128,0.25)" }}
+                    className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors border bg-zellige-teal/10 text-zellige-teal border-zellige-teal/20 disabled:opacity-60"
                   >
                     Confirm Booking
                   </button>
@@ -506,8 +487,7 @@ export function InboxView() {
                     type="button"
                     disabled={cancelMutation.isPending || selectedBooking.status === "CANCELLED"}
                     onClick={() => cancelMutation.mutate({ bookingId: selectedBooking.id, status: "CANCELLED" })}
-                    className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors"
-                    style={{ background: "#F8717120", color: "#F87171", border: "1px solid rgba(248,113,113,0.25)" }}
+                    className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors border bg-red-400/10 text-red-600 border-red-400/20 disabled:opacity-60"
                   >
                     Cancel
                   </button>
@@ -515,8 +495,7 @@ export function InboxView() {
                     type="button"
                     disabled={markDepositMutation.isPending || selectedBooking.paymentStatus === "PAID"}
                     onClick={openDepositModal}
-                    className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors"
-                    style={{ background: "#F5F0E8", color: "#1c3a28", border: "1px solid #E8EDE9" }}
+                    className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors btn btn-ghost border-accent disabled:opacity-60"
                   >
                     Mark Deposit
                   </button>
@@ -524,8 +503,7 @@ export function InboxView() {
                     href={toGoogleCalendarUrl(new Date(selectedBooking.startAt), `${selectedBooking.activityTitle} - ${selectedBooking.customerName}`)}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors"
-                    style={{ background: "#0D2818", color: "white", border: "1px solid rgba(13,40,24,0.2)", textDecoration: "none" }}
+                    className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors btn producer-new-booking"
                   >
                     Add to Calendar
                   </a>
@@ -533,7 +511,7 @@ export function InboxView() {
               </div>
 
               <div className="flex flex-col gap-3">
-                <p className="font-sans text-[11px] font-bold tracking-wide text-[#4a6358] uppercase">Conversation</p>
+                <p className="font-sans text-[11px] font-bold tracking-wide text-(--text-2) uppercase">Conversation</p>
                 {renderConversation(selectedBooking.messages)}
                 <div className="flex flex-col gap-3 pt-1">
                   <TextArea
@@ -545,8 +523,7 @@ export function InboxView() {
                   <div className="flex items-center justify-end gap-3">
                     <button
                       type="button"
-                      className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors"
-                      style={{ background: "#F5F0E8", color: "#1c3a28", border: "1px solid #E8EDE9" }}
+                      className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors btn btn-ghost border-accent"
                       onClick={() => setMessageDraft("")}
                       disabled={sendMessageMutation.isPending || !messageDraft.trim()}
                     >
@@ -554,8 +531,7 @@ export function InboxView() {
                     </button>
                     <button
                       type="button"
-                      className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors disabled:opacity-60"
-                      style={{ background: "#0D2818", color: "white", border: "1px solid rgba(13,40,24,0.2)" }}
+                      className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors disabled:opacity-60 btn producer-new-booking"
                       onClick={onSendMessage}
                       disabled={sendMessageMutation.isPending || !messageDraft.trim()}
                     >
@@ -563,7 +539,7 @@ export function InboxView() {
                     </button>
                   </div>
                   {sendMessageMutation.error && (
-                    <p className="font-sans text-sm" style={{ color: "#f87171" }}>
+                    <p className="font-sans text-sm text-red-500">
                       Failed to send message
                     </p>
                   )}
@@ -638,8 +614,7 @@ export function InboxView() {
           <div className="flex items-center justify-end gap-3">
             <button
               type="button"
-              className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors"
-              style={{ background: "#F5F0E8", color: "#1c3a28", border: "1px solid #E8EDE9" }}
+              className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors btn btn-ghost border-accent"
               onClick={() => setCreateOpen(false)}
               disabled={createBookingMutation.isPending}
             >
@@ -647,8 +622,7 @@ export function InboxView() {
             </button>
             <button
               type="button"
-              className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors disabled:opacity-60"
-              style={{ background: "#0D2818", color: "white" }}
+              className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors disabled:opacity-60 btn producer-new-booking"
               onClick={onCreate}
               disabled={!canSubmit || createBookingMutation.isPending}
             >
@@ -656,7 +630,7 @@ export function InboxView() {
             </button>
           </div>
           {createBookingMutation.error && (
-            <p className="font-sans text-sm" style={{ color: "#f87171" }}>
+            <p className="font-sans text-sm text-red-500">
               {createBookingMutation.error instanceof Error ? createBookingMutation.error.message : "Failed to create booking"}
             </p>
           )}
@@ -682,8 +656,7 @@ export function InboxView() {
           <div className="flex items-center justify-end gap-3">
             <button
               type="button"
-              className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors"
-              style={{ background: "#F5F0E8", color: "#1c3a28", border: "1px solid #E8EDE9" }}
+              className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors btn btn-ghost border-accent"
               onClick={() => setDepositOpen(false)}
               disabled={markDepositMutation.isPending}
             >
@@ -691,8 +664,7 @@ export function InboxView() {
             </button>
             <button
               type="button"
-              className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors disabled:opacity-60"
-              style={{ background: "#0D2818", color: "white", border: "1px solid rgba(13,40,24,0.2)" }}
+              className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors disabled:opacity-60 btn producer-new-booking"
               onClick={onConfirmDeposit}
               disabled={markDepositMutation.isPending || depositMad < 0}
             >
@@ -701,7 +673,7 @@ export function InboxView() {
           </div>
 
           {markDepositMutation.error && (
-            <p className="font-sans text-sm" style={{ color: "#f87171" }}>
+            <p className="font-sans text-sm text-red-500">
               Failed to mark deposit
             </p>
           )}

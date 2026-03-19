@@ -8,9 +8,8 @@ import { ProfileHeaderCard } from "./profile-header-card";
 import { ProfileSideCards } from "./profile-side-cards";
 import { useUploadProfileImage } from "~/features/media";
 import {
-  cardStyle,
-  cardHeaderBorder,
-  fieldStyle,
+  cardClassName,
+  cardHeaderClassName,
   inputClassName,
   labelClassName,
 } from "./profile-edit-styles";
@@ -128,7 +127,7 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <Link
           href="/producer/profile"
-          className="font-sans text-sm text-[#4a6358] hover:text-[#1c3a28] transition-colors"
+          className="font-sans text-sm text-(--text-2) hover:text-(--text-1) transition-colors"
         >
           ← Back to profile
         </Link>
@@ -147,10 +146,10 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-4">
           <div className="flex flex-col gap-4">
             {/* Personal Information */}
-            <div className="rounded-xl overflow-hidden" style={cardStyle}>
-              <div className="px-5 py-4 border-b" style={cardHeaderBorder}>
-                <h3 className="font-serif font-bold text-[15px] text-[#1c3a28]">Personal Information</h3>
-                <p className="font-sans text-[11px] text-[#4a6358] mt-0.5">Your account and contact details</p>
+            <div className={cardClassName}>
+              <div className={cardHeaderClassName}>
+                <h3 className="font-serif font-bold text-[15px] text-(--text-1)">Personal Information</h3>
+                <p className="font-sans text-[11px] text-(--text-2) mt-0.5">Your account and contact details</p>
               </div>
               <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2 flex flex-wrap items-end gap-4">
@@ -176,8 +175,7 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
                           type="button"
                           onClick={openPhotoPicker}
                           disabled={photoUploading}
-                          className="font-sans text-sm font-medium rounded-xl px-4 py-2 transition-colors disabled:opacity-50 w-fit"
-                          style={{ background: "#F5F0E8", color: "#1c3a28", border: "1px solid #E8EDE9" }}
+                          className="font-sans text-sm font-medium rounded-xl px-4 py-2 transition-colors disabled:opacity-50 w-fit btn btn-ghost border-accent"
                         >
                           {photoUploading ? "Uploading…" : "Change photo"}
                         </button>
@@ -200,7 +198,6 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
                     value={form.firstName}
                     onChange={(e) => set("firstName")(e.target.value)}
                     className={inputClassName}
-                    style={fieldStyle}
                     placeholder="Rida"
                   />
                 </div>
@@ -214,13 +211,12 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
                     value={form.lastName}
                     onChange={(e) => set("lastName")(e.target.value)}
                     className={inputClassName}
-                    style={fieldStyle}
                     placeholder="Elmazary"
                   />
                 </div>
                 <div>
                   <label className={labelClassName}>Email Address</label>
-                  <div className="font-sans text-sm text-[#1c3a28] rounded-xl px-3.5 py-2.5" style={fieldStyle}>
+                  <div className="font-sans text-sm rounded-xl px-3.5 py-2.5 field">
                     {user.email}
                   </div>
                 </div>
@@ -234,7 +230,6 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
                     value={form.phone}
                     onChange={(e) => set("phone")(e.target.value)}
                     className={inputClassName}
-                    style={fieldStyle}
                     placeholder="+212 6XX XXX XXX"
                   />
                 </div>
@@ -242,10 +237,10 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
             </div>
 
             {/* Business Information */}
-            <div className="rounded-xl overflow-hidden" style={cardStyle}>
-              <div className="px-5 py-4 border-b" style={cardHeaderBorder}>
-                <h3 className="font-serif font-bold text-[15px] text-[#1c3a28]">Business Information</h3>
-                <p className="font-sans text-[11px] text-[#4a6358] mt-0.5">Your cooperative and legal details</p>
+            <div className={cardClassName}>
+              <div className={cardHeaderClassName}>
+                <h3 className="font-serif font-bold text-[15px] text-(--text-1)">Business Information</h3>
+                <p className="font-sans text-[11px] text-(--text-2) mt-0.5">Your cooperative and legal details</p>
               </div>
               <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -257,7 +252,6 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
                     value={form.entityType}
                     onChange={(e) => set("entityType")(e.target.value)}
                     className={inputClassName}
-                    style={fieldStyle}
                   >
                     <option value="">Select entity type</option>
                     {ENTITY_TYPES.map((t) => (
@@ -275,7 +269,6 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
                     value={form.entityName}
                     onChange={(e) => set("entityName")(e.target.value)}
                     className={inputClassName}
-                    style={fieldStyle}
                     placeholder="Coopérative Tissint"
                   />
                 </div>
@@ -289,7 +282,6 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
                     value={form.registrationNumber}
                     onChange={(e) => set("registrationNumber")(e.target.value)}
                     className={inputClassName}
-                    style={fieldStyle}
                     placeholder="RC-XXXX-MA-XXXXX"
                   />
                 </div>
@@ -302,7 +294,6 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
                     value={form.region}
                     onChange={(e) => set("region")(e.target.value)}
                     className={inputClassName}
-                    style={fieldStyle}
                   >
                     <option value="">Select region</option>
                     {MOROCCAN_REGIONS.map((r) => (
@@ -320,7 +311,6 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
                     value={form.city}
                     onChange={(e) => set("city")(e.target.value)}
                     className={inputClassName}
-                    style={fieldStyle}
                     placeholder="Taliouine"
                   />
                 </div>
@@ -334,7 +324,6 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
                     value={form.yearEstablished}
                     onChange={(e) => set("yearEstablished")(e.target.value)}
                     className={inputClassName}
-                    style={fieldStyle}
                     placeholder="2018"
                   />
                 </div>
@@ -348,13 +337,12 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
                     value={form.website}
                     onChange={(e) => set("website")(e.target.value)}
                     className={inputClassName}
-                    style={fieldStyle}
                     placeholder="www.example.ma"
                   />
                 </div>
                 <div className="sm:col-span-2">
                   <p className={labelClassName}>Primary Products</p>
-                  <p className="font-sans text-[11px] text-[#4a6358] mb-2">Select all categories you produce</p>
+                  <p className="font-sans text-[11px] text-(--text-2) mb-2">Select all categories you produce</p>
                   <div className="flex flex-wrap gap-2">
                     {PRODUCT_CATEGORIES.map((cat) => {
                       const selected = form.categories.includes(cat.label);
@@ -363,12 +351,9 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
                           key={cat.label}
                           type="button"
                           onClick={() => toggleCategory(cat.label)}
-                          className="font-sans text-[12px] font-semibold rounded-xl px-4 py-2 transition-all"
-                          style={
-                            selected
-                              ? { background: cat.color, color: "#0D2818", border: `1px solid ${cat.color}` }
-                              : { background: "#F5F0E8", color: "#4a6358", border: "1px solid #E8EDE9" }
-                          }
+                          className={`font-sans text-[12px] font-semibold rounded-xl px-4 py-2 transition-all btn ${
+                            selected ? "btn-accent" : "btn-ghost border-accent"
+                          }`}
                         >
                           {cat.label}
                         </button>
@@ -386,7 +371,6 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
                     value={form.annualCapacity}
                     onChange={(e) => set("annualCapacity")(e.target.value)}
                     className={inputClassName}
-                    style={fieldStyle}
                   />
                 </div>
                 <div>
@@ -398,7 +382,6 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
                     value={form.exportExperience}
                     onChange={(e) => set("exportExperience")(e.target.value)}
                     className={inputClassName}
-                    style={fieldStyle}
                   >
                     <option value="">Select</option>
                     {EXPORT_EXPERIENCE_OPTIONS.map((o) => (
@@ -410,10 +393,7 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
             </div>
 
             {error && (
-              <div
-                className="rounded-xl px-4 py-3 font-sans text-sm text-red-600"
-                style={{ background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)" }}
-              >
+              <div className="rounded-xl px-4 py-3 font-sans text-sm auth-error">
                 {error}
               </div>
             )}
@@ -421,8 +401,7 @@ export function ProfileEditView({ user, profile, memberSince, partnerId }: Props
             <button
               type="submit"
               disabled={submitting}
-              className="font-sans font-semibold text-sm rounded-xl px-8 py-3 transition-colors disabled:opacity-60 w-fit"
-              style={{ background: "#C9913D", color: "#0D2818", border: "1px solid #C9913D" }}
+              className="font-sans font-semibold text-sm rounded-xl px-8 py-3 transition-colors disabled:opacity-60 w-fit btn btn-accent"
             >
               {submitting ? "Saving…" : "Save changes"}
             </button>

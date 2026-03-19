@@ -23,12 +23,9 @@ export function ProfileView({ user, profile, memberSince, partnerId }: Props) {
   if (!profile) {
     return (
       <div className="p-4 lg:p-6">
-        <div
-          className="rounded-xl p-8 text-center"
-          style={{ background: "white", border: "1px solid #E8EDE9" }}
-        >
-          <p className="font-sans text-[#4a6358]">No profile data yet. Complete onboarding to see your profile here.</p>
-          <Link href="/onboarding" className="mt-4 inline-block font-sans text-sm font-medium text-[#1c3a28] underline">
+        <div className="rounded-xl p-8 text-center card">
+          <p className="font-sans text-(--text-2)">No profile data yet. Complete onboarding to see your profile here.</p>
+          <Link href="/onboarding" className="mt-4 inline-block font-sans text-sm font-medium text-(--text-1) underline">
             Go to onboarding
           </Link>
         </div>

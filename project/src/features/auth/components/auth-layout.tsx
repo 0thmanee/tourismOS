@@ -2,61 +2,10 @@
 
 import React from "react";
 import Link from "next/link";
+import { Star } from "lucide-react";
 
-const authLayoutBg =
-  "linear-gradient(in oklab 160deg, oklab(14% -0.025 0.012) 0%, oklab(22% -0.038 0.018) 100%)";
-
-const patternSvg = (
-  <svg
-    className="absolute inset-0 w-full h-full pointer-events-none"
-    style={{ opacity: 0.04 }}
-    aria-hidden
-  >
-    <defs>
-      <pattern
-        id="auth-pattern"
-        x="0"
-        y="0"
-        width="48"
-        height="48"
-        patternUnits="userSpaceOnUse"
-      >
-        <rect
-          x="10"
-          y="10"
-          width="28"
-          height="28"
-          fill="none"
-          stroke="rgba(201,145,61,1)"
-          strokeWidth="0.7"
-        />
-        <rect
-          x="10"
-          y="10"
-          width="28"
-          height="28"
-          fill="none"
-          stroke="rgba(201,145,61,1)"
-          strokeWidth="0.7"
-          transform="rotate(45 24 24)"
-        />
-        <circle cx="24" cy="24" r="3" fill="rgba(201,145,61,0.4)" />
-      </pattern>
-    </defs>
-    <rect width="100%" height="100%" fill="url(#auth-pattern)" />
-  </svg>
-);
-
-const inputCls =
-  "font-sans text-sm text-white rounded-xl px-4 py-2.5 outline-none w-full transition-colors placeholder:text-white/25";
-const inputStyle = {
-  background: "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.1)",
-};
-const inputFocusStyle = {
-  background: "rgba(255,255,255,0.08)",
-  border: "1px solid rgba(201,145,61,0.4)",
-};
+export const inputCls =
+  "font-sans text-sm rounded-xl px-4 py-2.5 w-full transition-colors placeholder:text-white/25 auth-input";
 
 export function AuthLayout({
   children,
@@ -76,14 +25,11 @@ export function AuthLayout({
   contentCenter?: boolean;
 }) {
   return (
-    <div
-      className="min-h-screen flex"
-      style={{ background: authLayoutBg }}
-    >
-      {patternSvg}
+    <div className="auth-shell">
+      <div className="auth-pattern bg-moroccan-pattern" aria-hidden />
 
       {/* Left panel */}
-      <div className="hidden lg:flex flex-col justify-between w-[420px] shrink-0 px-10 py-12 relative z-10 border-r border-white/6">
+      <div className="hidden lg:flex flex-col justify-between w-[420px] shrink-0 px-10 py-12 relative z-10 border-r auth-panel">
         <div>
           <Link href="/" className="flex flex-col gap-0.5 mb-14">
             <span className="font-sans font-semibold text-white text-[18px] leading-tight">
@@ -108,18 +54,10 @@ export function AuthLayout({
             </p>
           </div>
         </div>
-        <div
-          className="rounded-2xl p-5"
-          style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.07)",
-          }}
-        >
+        <div className="rounded-2xl p-5 auth-card">
           <div className="flex gap-0.5 mb-3">
             {[...Array(5)].map((_, i) => (
-              <span key={i} className="text-gold text-sm">
-                ★
-              </span>
+              <Star key={i} className="text-gold" size={14} aria-hidden />
             ))}
           </div>
           <p className="font-serif italic text-[14px] text-white/80 leading-relaxed">
@@ -170,5 +108,3 @@ export function AuthLayout({
     </div>
   );
 }
-
-export { inputCls, inputStyle, inputFocusStyle };

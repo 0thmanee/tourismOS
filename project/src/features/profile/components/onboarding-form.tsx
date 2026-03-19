@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Check } from "lucide-react";
 import {
   AuthLayout,
   AuthInput,
@@ -25,9 +26,6 @@ const set =
   (key: keyof OnboardingFormData) =>
   (value: string | boolean | string[]) =>
   (prev: OnboardingFormData) => ({ ...prev, [key]: value });
-
-const editModeBg =
-  "linear-gradient(in oklab 160deg, oklab(14% -0.025 0.012) 0%, oklab(22% -0.038 0.018) 100%)";
 
 export function OnboardingForm({
   initialData,
@@ -100,61 +98,33 @@ export function OnboardingForm({
               <React.Fragment key={s.number}>
                 <div className="flex flex-col items-center gap-1.5">
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center font-sans font-bold text-xs transition-all"
-                    style={
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-sans font-bold text-xs transition-all border ${
                       step > s.number
-                        ? {
-                            background: "rgba(74,222,128,0.15)",
-                            border: "1px solid rgba(74,222,128,0.3)",
-                            color: "#4ADE80",
-                          }
+                        ? "bg-zellige-teal/15 border-zellige-teal/30 text-zellige-teal"
                         : step === s.number
-                          ? { background: "#C9913D", color: "#0D2818" }
-                          : {
-                              background: "rgba(255,255,255,0.06)",
-                              border: "1px solid rgba(255,255,255,0.1)",
-                              color: "rgba(255,255,255,0.3)",
-                            }
-                    }
+                          ? "bg-gold border-gold text-forest-dark"
+                          : "auth-input text-white/30"
+                    }`}
                   >
                     {step > s.number ? (
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 12 12"
-                        fill="none"
-                        stroke="#4ADE80"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M2.5 6l2.5 2.5 4.5-5" />
-                      </svg>
+                      <Check size={12} aria-hidden />
                     ) : (
                       s.number
                     )}
                   </div>
-                  <span
-                    className="font-sans text-[10px] font-semibold uppercase tracking-wider"
-                    style={{
-                      color:
-                        step === s.number
-                          ? "rgba(255,255,255,0.9)"
-                          : "rgba(255,255,255,0.3)",
-                    }}
-                  >
+                  <span className={`font-sans text-[10px] font-semibold uppercase tracking-wider ${
+                    step === s.number ? "text-white/90" : "text-white/30"
+                  }`}>
                     {s.label}
                   </span>
                 </div>
                 {i < ONBOARDING_STEPS.length - 1 && (
                   <div
-                    className="flex-1 h-px mb-4 mx-2 min-w-[24px]"
-                    style={{
-                      background:
-                        step > s.number
-                          ? "rgba(74,222,128,0.3)"
-                          : "rgba(255,255,255,0.08)",
-                    }}
+                    className={`flex-1 h-px mb-4 mx-2 min-w-[24px] ${
+                      step > s.number
+                        ? "bg-zellige-teal/30"
+                        : "bg-white/10"
+                    }`}
                   />
                 )}
               </React.Fragment>
@@ -281,24 +251,10 @@ export function OnboardingForm({
                           key={cat.label}
                           type="button"
                           onClick={() => toggleCategory(cat.label)}
-                          className="font-sans text-[12px] font-semibold rounded-xl px-4 py-2 transition-all"
-                          style={
-                            selected
-                              ? {
-                                  background: `${cat.color}22`,
-                                  color: cat.color,
-                                  border: `1px solid ${cat.color}55`,
-                                }
-                              : {
-                                  background: "rgba(255,255,255,0.05)",
-                                  color: "rgba(255,255,255,0.5)",
-                                  border: "1px solid rgba(255,255,255,0.08)",
-                                }
-                          }
+                          className={`font-sans text-[12px] font-semibold rounded-xl px-4 py-2 transition-all border ${
+                            selected ? "bg-gold text-forest-dark border-gold" : "pill-inverse"
+                          }`}
                         >
-                          {selected && (
-                            <span className="mr-1.5 text-[10px]">✓</span>
-                          )}
                           {cat.label}
                         </button>
                       );
@@ -341,11 +297,7 @@ export function OnboardingForm({
               </div>
               <div className="flex flex-col gap-3">
                 <div
-                  className="rounded-xl overflow-hidden"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
+                  className="rounded-xl overflow-hidden auth-card"
                 >
                   <div className="px-4 py-3 flex items-center justify-between border-b border-white/6">
                     <span className="font-sans text-[11px] font-bold tracking-wider text-white/40 uppercase">
@@ -379,11 +331,7 @@ export function OnboardingForm({
                   </div>
                 </div>
                 <div
-                  className="rounded-xl overflow-hidden"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
+                  className="rounded-xl overflow-hidden auth-card"
                 >
                   <div className="px-4 py-3 flex items-center justify-between border-b border-white/6">
                     <span className="font-sans text-[11px] font-bold tracking-wider text-white/40 uppercase">
@@ -399,38 +347,22 @@ export function OnboardingForm({
                   </div>
                   <div className="px-4 py-3">
                     <div className="flex flex-wrap gap-1.5">
-                      {form.categories.map((c) => {
-                        const cat = PRODUCT_CATEGORIES.find(
-                          (p) => p.label === c
-                        );
-                        return (
-                          <span
-                            key={c}
-                            className="font-sans text-[11px] font-semibold rounded-full px-2.5 py-0.5"
-                            style={{
-                              background: `${cat?.color ?? "#C9913D"}22`,
-                              color: cat?.color ?? "#C9913D",
-                              border: `1px solid ${cat?.color ?? "#C9913D"}44`,
-                            }}
-                          >
-                            {c}
-                          </span>
-                        );
-                      })}
+                      {form.categories.map((c) => (
+                        <span
+                          key={c}
+                          className="font-sans text-[11px] font-semibold rounded-full px-2.5 py-0.5 pill-inverse"
+                        >
+                          {c}
+                        </span>
+                      ))}
                     </div>
                   </div>
                 </div>
                 <label className="flex items-start gap-3 cursor-pointer">
                   <div
-                    className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors"
-                    style={
-                      form.agreeTerms
-                        ? { background: "#C9913D", border: "1px solid #C9913D" }
-                        : {
-                            background: "rgba(255,255,255,0.06)",
-                            border: "1px solid rgba(255,255,255,0.15)",
-                          }
-                    }
+                    className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors border ${
+                      form.agreeTerms ? "bg-gold border-gold" : "auth-input"
+                    }`}
                     onClick={() =>
                       setForm(set("agreeTerms")(!form.agreeTerms))
                     }
@@ -443,18 +375,7 @@ export function OnboardingForm({
                     aria-checked={form.agreeTerms}
                   >
                     {form.agreeTerms && (
-                      <svg
-                        width="10"
-                        height="10"
-                        viewBox="0 0 10 10"
-                        fill="none"
-                        stroke="#0D2818"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M2 5l2 2 4-4" />
-                      </svg>
+                      <Check size={12} className="text-forest-dark" aria-hidden />
                     )}
                   </div>
                   <span className="font-sans text-[13px] text-white/60 leading-relaxed">
@@ -464,15 +385,9 @@ export function OnboardingForm({
                 </label>
                 <label className="flex items-start gap-3 cursor-pointer">
                   <div
-                    className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors"
-                    style={
-                      form.agreeMarketing
-                        ? { background: "#C9913D", border: "1px solid #C9913D" }
-                        : {
-                            background: "rgba(255,255,255,0.06)",
-                            border: "1px solid rgba(255,255,255,0.15)",
-                          }
-                    }
+                    className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors border ${
+                      form.agreeMarketing ? "bg-gold border-gold" : "auth-input"
+                    }`}
                     onClick={() =>
                       setForm(set("agreeMarketing")(!form.agreeMarketing))
                     }
@@ -485,18 +400,7 @@ export function OnboardingForm({
                     aria-checked={form.agreeMarketing}
                   >
                     {form.agreeMarketing && (
-                      <svg
-                        width="10"
-                        height="10"
-                        viewBox="0 0 10 10"
-                        fill="none"
-                        stroke="#0D2818"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M2 5l2 2 4-4" />
-                      </svg>
+                      <Check size={12} className="text-forest-dark" aria-hidden />
                     )}
                   </div>
                   <span className="font-sans text-[13px] text-white/60 leading-relaxed">
@@ -508,14 +412,8 @@ export function OnboardingForm({
             </div>
           )}
 
-          {(step === 3 && submitError) && (
-            <div
-              className="rounded-xl px-4 py-3 font-sans text-sm text-[#f87171] mt-4"
-              style={{
-                background: "rgba(248,113,113,0.1)",
-                border: "1px solid rgba(248,113,113,0.25)",
-              }}
-            >
+          {step === 3 && submitError && (
+            <div className="rounded-xl px-4 py-3 font-sans text-sm auth-error mt-4">
               {submitError}
             </div>
           )}
@@ -525,12 +423,7 @@ export function OnboardingForm({
               <button
                 type="button"
                 onClick={() => setStep(step - 1)}
-                className="font-sans text-sm font-medium rounded-xl px-6 py-3 transition-colors"
-                style={{
-                  background: "rgba(255,255,255,0.06)",
-                  color: "rgba(255,255,255,0.7)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                }}
+                className="font-sans text-sm font-medium rounded-xl px-6 py-3 transition-colors btn btn-ghost border-accent"
               >
                 ← Back
               </button>
@@ -541,16 +434,9 @@ export function OnboardingForm({
               <button
                 type="button"
                 onClick={() => canNext() && setStep(step + 1)}
-                className="font-sans font-semibold text-sm rounded-xl px-8 py-3 transition-all"
-                style={
-                  canNext()
-                    ? { background: "#C9913D", color: "#0D2818" }
-                    : {
-                        background: "rgba(201,145,61,0.2)",
-                        color: "rgba(201,145,61,0.4)",
-                        cursor: "not-allowed",
-                      }
-                }
+                className={`font-sans font-semibold text-sm rounded-xl px-8 py-3 transition-all btn ${
+                  canNext() ? "btn-accent" : "btn-ghost"
+                }`}
               >
                 Continue →
               </button>
@@ -559,16 +445,9 @@ export function OnboardingForm({
                 type="button"
                 disabled={!canNext() || submitting}
                 onClick={handleSubmit}
-                className="font-sans font-semibold text-sm rounded-xl px-8 py-3 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                style={
-                  canNext() && !submitting
-                    ? { background: "#C9913D", color: "#0D2818" }
-                    : {
-                        background: "rgba(201,145,61,0.2)",
-                        color: "rgba(201,145,61,0.4)",
-                        cursor: "not-allowed",
-                      }
-                }
+                className={`font-sans font-semibold text-sm rounded-xl px-8 py-3 transition-all disabled:opacity-60 disabled:cursor-not-allowed btn ${
+                  canNext() && !submitting ? "btn-accent" : "btn-ghost"
+                }`}
               >
                 {submitting ? "Saving…" : isEdit ? "Save changes" : "Complete profile"}
               </button>
@@ -582,8 +461,7 @@ export function OnboardingForm({
     return (
       <div className="p-4 lg:p-6">
         <div
-          className="rounded-xl overflow-hidden max-w-lg mx-auto"
-          style={{ background: editModeBg }}
+          className="rounded-xl overflow-hidden max-w-lg mx-auto auth-gradient-bg"
         >
           <div className="px-6 lg:px-10 py-6 border-b border-white/10">
             <Link

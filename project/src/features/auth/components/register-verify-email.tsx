@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AuthLayout } from "~/features/auth";
 import { sendVerificationEmail } from "~/lib/auth-client";
+import { ArrowRight, Mail } from "lucide-react";
 
 const CALLBACK_URL = "/onboarding";
 
@@ -38,25 +39,9 @@ export function RegisterVerifyEmail({ email }: { email: string }) {
     >
       <div className="flex flex-col gap-6 text-center">
         <div
-          className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
-          style={{
-            background: "rgba(201,145,61,0.15)",
-            border: "1px solid rgba(201,145,61,0.3)",
-          }}
+          className="w-16 h-16 rounded-full flex items-center justify-center mx-auto auth-badge"
         >
-          <svg
-            width="28"
-            height="28"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#C9913D"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-            <path d="m22 6-10 7L2 6" />
-          </svg>
+          <Mail size={28} aria-hidden />
         </div>
         <p className="font-sans text-white/80 text-sm leading-relaxed">
           We sent a verification link to{" "}
@@ -72,12 +57,7 @@ export function RegisterVerifyEmail({ email }: { email: string }) {
             type="button"
             onClick={handleResend}
             disabled={status === "sending"}
-            className="font-sans font-semibold text-sm rounded-xl px-6 py-3 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            style={{
-              background: "rgba(201,145,61,0.2)",
-              color: "#C9913D",
-              border: "1px solid rgba(201,145,61,0.4)",
-            }}
+            className="font-sans font-semibold text-sm rounded-xl px-6 py-3 transition-colors disabled:opacity-60 disabled:cursor-not-allowed btn btn-ghost border-accent"
           >
             {status === "sending"
               ? "Sending…"
@@ -91,13 +71,13 @@ export function RegisterVerifyEmail({ email }: { email: string }) {
             </p>
           )}
           {status === "error" && errorMessage && (
-            <p className="font-sans text-[11px] text-[#f87171]">{errorMessage}</p>
+            <p className="font-sans text-[11px] text-red-300">{errorMessage}</p>
           )}
           <Link
             href="/auth/login"
             className="font-sans font-semibold text-sm text-gold hover:text-gold/80 transition-colors"
           >
-            Go to Sign in →
+            Go to Sign in <ArrowRight size={14} className="inline-block align-[-2px]" aria-hidden />
           </Link>
         </div>
       </div>

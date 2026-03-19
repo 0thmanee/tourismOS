@@ -18,7 +18,7 @@ export function AuthField({
       </label>
       {children}
       {error && (
-        <p className="font-sans text-[11px] text-[#f87171] mt-0.5">{error}</p>
+        <p className="font-sans text-[11px] text-red-300 mt-0.5">{error}</p>
       )}
     </div>
   );
