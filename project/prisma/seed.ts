@@ -482,7 +482,7 @@ async function main() {
     }
 
     const booking = await prisma.booking.create({
-      data: {
+        data: {
         organizationId: demoOrg.id,
         customerId: cust.id,
         activityId,
@@ -534,8 +534,8 @@ async function main() {
           staffMemberId: guide.id,
           assignmentRole: "Lead guide",
           notes: Math.random() > 0.5 ? "Meet at main square" : null,
-        },
-      });
+    },
+  });
 
       if (driver && Math.random() > 0.45) {
         await prisma.bookingAssignment
@@ -563,7 +563,7 @@ async function main() {
     const existingBookings = await prisma.booking.count({ where: { organizationId: orgId } });
     if (existingBookings > 0) continue;
 
-    const now = new Date();
+  const now = new Date();
     const customer1 = await prisma.customer.create({
       data: { organizationId: orgId, name: "Demo Visitor", phone: "+212600000099", notes: null },
       select: { id: true },
