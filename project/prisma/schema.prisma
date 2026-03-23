@@ -129,8 +129,27 @@ model Organization {
   // App tenant-scoped relations
   customers Customer[]
   bookings  Booking[]
+  staffMembers StaffMember[]
+  settings  OrganizationSettings?
 
   @@map("organization")
+}
+
+// MVP Step 1: operator business settings (activities + pricing presets)
+model OrganizationSettings {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  /** Display name override; falls back to Organization.name if empty */
+  businessName   String?
+  /** string[] activity labels for quick picks */
+  activities     Json     @default("[]")
+  /** { label: string, priceMad: number }[] */
+  pricingPresets Json     @default("[]")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("organization_settings")
 }
 
 model Member {
@@ -205,11 +224,47 @@ model Booking {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   messages     BookingMessage[]
+  assignments  BookingAssignment[]
 
   @@index([organizationId])
   @@index([status])
   @@index([startAt])
   @@map("booking")
+}
+
+model StaffMember {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  role           String // GUIDE | DRIVER | COORDINATOR
+  phone          String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignments  BookingAssignment[]
+
+  @@index([organizationId])
+  @@index([role])
+  @@map("staff_member")
+}
+
+model BookingAssignment {
+  id            String   @id @default(cuid())
+  bookingId     String
+  staffMemberId String
+  assignmentRole String? // GUIDE | DRIVER | COORDINATOR | custom label
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  booking     Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  staffMember StaffMember @relation(fields: [staffMemberId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, staffMemberId])
+  @@index([bookingId])
+  @@index([staffMemberId])
+  @@map("booking_assignment")
 }
 
 model BookingMessage {

@@ -1,11 +1,16 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSession } from "~/app/api/auth/actions";
 import { prisma } from "~/lib/db";
 import {
+  bookingsFilterSchema,
+  calendarRangeSchema,
   createBookingSchema,
   markDepositSchema,
+  markPaidSchema,
+  updateBookingSchema,
   updateBookingStatusSchema,
   sendBookingMessageSchema,
   type CreateBookingInput,
@@ -16,14 +21,22 @@ import {
   type BookingInboxRow,
   type BookingStatus,
   type BookingMessageRow,
+  type BookingsFilterInput,
+  type CalendarRangeInput,
+  type UpdateBookingInput,
+  type MarkPaidInput,
 } from "./schemas/bookings.schema";
 import {
   createBookingRepo,
   getMyBookingDetailRepo,
+  listMyBookingsFilteredRepo,
   listMyBookingsForInboxRepo,
+  listMyBookingsInRangeRepo,
   markDepositRepo,
+  markPaidRepo,
   sendBookingMessageRepo,
   setBookingStatusRepo,
+  updateBookingRepo,
 } from "./repo/bookings.repo";
 
 async function requireProducerOrganizationId(redirectTo: string): Promise<string> {
@@ -46,6 +59,64 @@ async function requireProducerOrganizationId(redirectTo: string): Promise<string
 export async function listMyBookingsForInbox(): Promise<BookingInboxRow[]> {
   const organizationId = await requireProducerOrganizationId("/producer/inbox");
   return listMyBookingsForInboxRepo(organizationId);
+}
+
+export async function listMyBookingsFiltered(filters: BookingsFilterInput): Promise<BookingInboxRow[]> {
+  const organizationId = await requireProducerOrganizationId("/producer/bookings");
+  const parsed = bookingsFilterSchema.parse(filters);
+  return listMyBookingsFilteredRepo(organizationId, {
+    dateFrom: parsed.dateFrom ? new Date(parsed.dateFrom) : undefined,
+    dateTo: parsed.dateTo ? new Date(parsed.dateTo) : undefined,
+    status: parsed.status,
+    activityContains: parsed.activityContains,
+    search: parsed.search,
+  });
+}
+
+export async function listMyBookingsForCalendar(range: CalendarRangeInput): Promise<BookingInboxRow[]> {
+  const organizationId = await requireProducerOrganizationId("/producer/calendar");
+  const parsed = calendarRangeSchema.parse(range);
+  const start = new Date(parsed.rangeStartISO);
+  const end = new Date(parsed.rangeEndISO);
+  return listMyBookingsInRangeRepo(organizationId, start, end);
+}
+
+export async function updateBooking(input: UpdateBookingInput): Promise<BookingDetailRow | null> {
+  const organizationId = await requireProducerOrganizationId("/producer/bookings");
+  const parsed = updateBookingSchema.parse(input);
+  const priceCents =
+    parsed.priceMad !== undefined ? Math.round(parsed.priceMad * 100) : undefined;
+  const result = await updateBookingRepo({
+    organizationId,
+    bookingId: parsed.bookingId,
+    activityTitle: parsed.activityTitle,
+    startAt: parsed.startAtISO ? new Date(parsed.startAtISO) : undefined,
+    peopleCount: parsed.peopleCount,
+    priceCents,
+  });
+  if (result) {
+    revalidatePath("/producer/bookings");
+    revalidatePath(`/producer/bookings/${parsed.bookingId}`);
+    revalidatePath("/producer/inbox");
+    revalidatePath("/producer/calendar");
+  }
+  return result;
+}
+
+export async function markBookingPaid(input: MarkPaidInput): Promise<BookingInboxRow | null> {
+  const organizationId = await requireProducerOrganizationId("/producer/payments");
+  const parsed = markPaidSchema.parse(input);
+  const row = await markPaidRepo({
+    bookingId: parsed.bookingId,
+    organizationId,
+  });
+  if (row) {
+    revalidatePath("/producer/payments");
+    revalidatePath("/producer/bookings");
+    revalidatePath(`/producer/bookings/${parsed.bookingId}`);
+    revalidatePath("/producer/inbox");
+  }
+  return row;
 }
 
 export async function getMyBookingDetail(bookingId: string): Promise<BookingDetailRow | null> {

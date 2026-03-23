@@ -39,8 +39,9 @@ export function useCreateBooking() {
   return useMutation({
     mutationFn: (data: CreateBookingInput) => createBooking(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: producerInboxBookingsQueryKey });
-      queryClient.invalidateQueries({ queryKey: producerInboxBookingDetailPrefix, exact: false });
+      void queryClient.invalidateQueries({ queryKey: producerInboxBookingsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: producerInboxBookingDetailPrefix, exact: false });
+      void queryClient.invalidateQueries({ queryKey: ["producer"] });
     },
   });
 }
@@ -50,8 +51,9 @@ export function useConfirmBooking() {
   return useMutation({
     mutationFn: (input: UpdateBookingStatusInput) => confirmBooking(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: producerInboxBookingsQueryKey });
-      queryClient.invalidateQueries({ queryKey: producerInboxBookingDetailPrefix, exact: false });
+      void queryClient.invalidateQueries({ queryKey: producerInboxBookingsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: producerInboxBookingDetailPrefix, exact: false });
+      void queryClient.invalidateQueries({ queryKey: ["producer"] });
     },
   });
 }
@@ -61,8 +63,9 @@ export function useCancelBooking() {
   return useMutation({
     mutationFn: (input: UpdateBookingStatusInput) => cancelBooking(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: producerInboxBookingsQueryKey });
-      queryClient.invalidateQueries({ queryKey: producerInboxBookingDetailPrefix, exact: false });
+      void queryClient.invalidateQueries({ queryKey: producerInboxBookingsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: producerInboxBookingDetailPrefix, exact: false });
+      void queryClient.invalidateQueries({ queryKey: ["producer"] });
     },
   });
 }
@@ -72,8 +75,9 @@ export function useMarkDeposit() {
   return useMutation({
     mutationFn: (input: MarkDepositInput) => markDeposit(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: producerInboxBookingsQueryKey });
-      queryClient.invalidateQueries({ queryKey: producerInboxBookingDetailPrefix, exact: false });
+      void queryClient.invalidateQueries({ queryKey: producerInboxBookingsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: producerInboxBookingDetailPrefix, exact: false });
+      void queryClient.invalidateQueries({ queryKey: ["producer"] });
     },
   });
 }
@@ -83,7 +87,7 @@ export function useSendBookingMessage() {
   return useMutation({
     mutationFn: (input: SendBookingMessageInput) => sendBookingMessage(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: producerInboxBookingDetailPrefix, exact: false });
+      void queryClient.invalidateQueries({ queryKey: producerInboxBookingDetailPrefix, exact: false });
     },
   });
 }

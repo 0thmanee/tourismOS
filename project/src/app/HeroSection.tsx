@@ -95,10 +95,7 @@ export default function HeroSection() {
                 <span className="font-sans text-[10px] tracking-[0.2em] text-white/35 uppercase">
                   Operator Inbox MVP
                 </span>
-                <span
-                  className="font-sans text-[10px] font-bold tracking-wider text-white rounded-full px-3 py-1 border"
-                  className="font-sans text-[10px] font-bold tracking-wider text-white rounded-full px-3 py-1 border pill-inverse"
-                >
+                <span className="font-sans text-[10px] font-bold tracking-wider text-white rounded-full px-3 py-1 border pill-inverse">
                   NEW • PENDING • CONFIRMED
                 </span>
               </div>

@@ -39,6 +39,36 @@ export const sendBookingMessageSchema = z.object({
 });
 export type SendBookingMessageInput = z.infer<typeof sendBookingMessageSchema>;
 
+export const updateBookingSchema = z.object({
+  bookingId: z.string().min(1),
+  activityTitle: z.string().min(1).max(200).optional(),
+  startAtISO: z.string().datetime().optional(),
+  peopleCount: z.coerce.number().int().min(1).optional(),
+  priceMad: z.coerce.number().min(0).optional(),
+});
+export type UpdateBookingInput = z.infer<typeof updateBookingSchema>;
+
+export const markPaidSchema = z.object({
+  bookingId: z.string().min(1, "Booking ID is required"),
+});
+export type MarkPaidInput = z.infer<typeof markPaidSchema>;
+
+export const bookingsFilterSchema = z.object({
+  dateFrom: z.string().datetime().optional(),
+  dateTo: z.string().datetime().optional(),
+  status: bookingStatusSchema.optional(),
+  activityContains: z.string().max(200).optional(),
+  /** Matches activity title, customer name, or phone (MVP search) */
+  search: z.string().max(200).optional(),
+});
+export type BookingsFilterInput = z.infer<typeof bookingsFilterSchema>;
+
+export const calendarRangeSchema = z.object({
+  rangeStartISO: z.string().datetime(),
+  rangeEndISO: z.string().datetime(),
+});
+export type CalendarRangeInput = z.infer<typeof calendarRangeSchema>;
+
 export type BookingInboxRow = {
   id: string;
   status: BookingStatus;
@@ -66,5 +96,19 @@ export type BookingMessageRow = {
 export type BookingDetailRow = BookingInboxRow & {
   depositCents: number | null;
   messages: BookingMessageRow[];
+  assignments: {
+    id: string;
+    staffMemberId: string;
+    assignmentRole: string | null;
+    notes: string | null;
+    createdAt: Date;
+    staffMember: {
+      id: string;
+      name: string;
+      role: string;
+      phone: string | null;
+      isActive: boolean;
+    };
+  }[];
 };
 

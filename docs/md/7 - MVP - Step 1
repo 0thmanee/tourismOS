@@ -1,0 +1,386 @@
+# 🧠 1. Product Structure (Information Architecture)
+
+We keep it **minimal but scalable**.
+
+```plaintext
+Dashboard
+├── Inbox
+├── Calendar
+├── Bookings
+├── Customers
+├── Payments
+└── Settings
+```
+
+👉 This is your entire MVP.
+
+No clutter. No noise.
+
+---
+
+# 🧭 2. Navigation System (SaaS Standard)
+
+### Layout: Sidebar + Topbar
+
+```plaintext
+[Sidebar]
+- Logo
+- Inbox
+- Calendar
+- Bookings
+- Customers
+- Payments
+- Settings
+
+[Topbar]
+- Search
+- Quick Add (+ Booking)
+- Notifications
+- Profile
+```
+
+---
+
+# 🎯 UX Principle
+
+* Everything is **1–2 clicks max**
+* Operators are **not tech-savvy → reduce friction**
+* Feels like:
+  👉 WhatsApp + Notion + Stripe (simple but powerful)
+
+---
+
+# 📩 3. Inbox (Core Screen)
+
+## 🔥 Purpose
+
+Replace WhatsApp chaos.
+
+---
+
+## Layout
+
+```plaintext
+[Left Panel]
+- List of conversations (bookings)
+
+[Right Panel]
+- Conversation + Booking details
+```
+
+---
+
+## UI Breakdown
+
+### Left (Inbox List)
+
+```plaintext
+Ahmed - Desert Tour
+🟡 Pending
+
+John - Quad Bike
+🟢 Confirmed
+
+Lisa - Cooking Class
+🔵 New
+```
+
+---
+
+### Right (Details View)
+
+```plaintext
+Customer: Ahmed
+Phone: +2126xxxxxxx
+
+Activity: Desert Tour
+Date: Tomorrow - 10:00
+People: 2
+
+Status: [New | Pending | Confirmed | Cancelled]
+
+[Conversation]
+- Customer messages
+- Operator replies
+
+[Actions]
+✔ Confirm Booking
+❌ Cancel
+📅 Add to Calendar
+💰 Mark Deposit
+```
+
+---
+
+## 🧠 UX Tricks
+
+* Status colors:
+
+  * Blue = New
+  * Yellow = Pending
+  * Green = Confirmed
+  * Red = Cancelled
+
+* Sticky action buttons → fast workflow
+
+---
+
+# 📅 4. Calendar (Clarity Engine)
+
+## 🔥 Purpose
+
+Kill double bookings.
+
+---
+
+## Layout
+
+```plaintext
+[Top]
+- Week / Day toggle
+
+[Main]
+- Time-based calendar
+```
+
+---
+
+## Example
+
+```plaintext
+10:00 - Desert Tour (Ahmed - 2ppl)
+14:00 - Quad Bike (John - 4ppl)
+18:00 - Cooking Class (Lisa)
+```
+
+---
+
+## Interactions
+
+* Click → open booking
+* Drag → reschedule
+* Empty slot → create booking
+
+---
+
+## 🧠 UX Principle
+
+👉 “See your day in 3 seconds”
+
+---
+
+# 📋 5. Bookings Page (Structured View)
+
+## 🔥 Purpose
+
+List + filter everything
+
+---
+
+## Layout
+
+Table-style:
+
+```plaintext
+Customer | Activity | Date | Status | Payment
+------------------------------------------------
+Ahmed    | Desert   | 12 Mar | Pending | Deposit
+John     | Quad     | 12 Mar | Confirmed | Paid
+```
+
+---
+
+## Features
+
+* filters:
+
+  * date
+  * status
+  * activity
+
+* quick actions:
+
+  * confirm
+  * cancel
+  * edit
+
+---
+
+# 👤 6. Customers Page
+
+## 🔥 Purpose
+
+Simple CRM
+
+---
+
+## Layout
+
+```plaintext
+Ahmed
+- 3 bookings
+- Total: 1500 MAD
+
+John
+- 1 booking
+```
+
+---
+
+## Detail View
+
+```plaintext
+Customer: Ahmed
+
+Bookings:
+- Desert Tour (March 10)
+- Quad (March 12)
+
+Notes:
+- VIP client
+```
+
+---
+
+# 💰 7. Payments Page
+
+## 🔥 Purpose
+
+Track money (simple)
+
+---
+
+## Layout
+
+```plaintext
+Booking | Customer | Amount | Status
+-----------------------------------
+Desert  | Ahmed    | 800 MAD | Deposit
+Quad    | John     | 1200 MAD | Paid
+```
+
+---
+
+## Status Types
+
+* Unpaid
+* Deposit
+* Paid
+
+---
+
+# ⚙️ 8. Settings (Minimal)
+
+Only:
+
+* business name
+* activities list
+* pricing presets
+
+---
+
+# ⚡ 9. Quick Add (Important UX Feature)
+
+Topbar button:
+
+```plaintext
++ New Booking
+```
+
+---
+
+## Modal
+
+```plaintext
+Customer Name
+Phone
+Activity
+Date
+Time
+People
+Price
+
+[Create Booking]
+```
+
+---
+
+## 🧠 UX Goal
+
+👉 Create booking in **< 20 seconds**
+
+---
+
+# 🎨 10. Visual Style Direction
+
+You want:
+
+## Style
+
+* clean
+* modern SaaS
+* soft colors
+* not “corporate heavy”
+
+---
+
+## Inspirations
+
+* Linear (clean)
+* Notion (simple)
+* Stripe (clarity)
+
+---
+
+## Color System
+
+* Primary: soft blue / purple
+* Success: green
+* Warning: yellow
+* Danger: red
+* Background: light gray
+
+---
+
+# 🧠 UX Philosophy (VERY IMPORTANT)
+
+This product should feel:
+
+> “Finally something simple that understands my business”
+
+NOT:
+
+❌ enterprise
+❌ complicated
+❌ overloaded
+
+---
+
+# 🧪 11. MVP UX Success Criteria
+
+If UX is good, operators will:
+
+* stop using notebook
+* reduce WhatsApp chaos
+* check app daily
+* trust the system
+
+---
+
+# 🚀 Your Advantage (This is key)
+
+Most competitors:
+
+* are engineers
+* build complex dashboards
+
+YOU:
+
+* are UI/UX + dev
+
+👉 You can win on:
+
+* simplicity
+* clarity
+* speed
+* onboarding

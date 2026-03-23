@@ -477,6 +477,19 @@ export function InboxView() {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
+                    disabled={
+                      confirmMutation.isPending ||
+                      selectedBooking.status === "PENDING" ||
+                      selectedBooking.status === "CONFIRMED" ||
+                      selectedBooking.status === "CANCELLED"
+                    }
+                    onClick={() => confirmMutation.mutate({ bookingId: selectedBooking.id, status: "PENDING" })}
+                    className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors border bg-amber-500/10 text-amber-800 border-amber-500/25 disabled:opacity-60"
+                  >
+                    Mark Pending
+                  </button>
+                  <button
+                    type="button"
                     disabled={confirmMutation.isPending || selectedBooking.status === "CONFIRMED" || selectedBooking.status === "CANCELLED"}
                     onClick={() => confirmMutation.mutate({ bookingId: selectedBooking.id, status: "CONFIRMED" })}
                     className="font-sans text-sm font-semibold rounded-xl px-4 py-2 transition-colors border bg-zellige-teal/10 text-zellige-teal border-zellige-teal/20 disabled:opacity-60"

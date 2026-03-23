@@ -1,13 +1,5 @@
-import React from "react";
+import { CalendarView } from "~/features/producer/components/calendar/calendar-view";
 
 export default function CalendarPage() {
-  return (
-    <div className="p-4 lg:p-6 flex flex-col gap-4">
-      <h2 className="font-serif font-bold text-[18px] text-(--text-1)">Calendar</h2>
-      <div className="rounded-xl py-12 text-center font-sans text-sm text-(--text-2) card">
-        MVP for calendar is coming next. This route is ready.
-      </div>
-    </div>
-  );
+  return <CalendarView />;
 }
-

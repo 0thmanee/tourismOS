@@ -7,31 +7,30 @@
 */
 
 @theme {
-  /* Brand palette — Moroccan zellige (teal/indigo) + terracotta */
-  --color-forest-dark: #0d2233;
-  --color-forest-mid: #17314d;
-  --color-forest-light: #2b5472;
+  /* Brand palette — Moroccan zellige (teal) + terracotta, no blue */
+  --color-forest-dark: #0d2a2a;
+  --color-forest-mid: #1a4040;
+  --color-forest-light: #2d5c5c;
 
   --color-cream: #f5f0e8;
   --color-cream-dark: #e8e2d8;
 
-  /* Terracotta (instead of yellow) */
+  /* Terracotta */
   --color-gold: #c46a3d;
   --color-gold-light: #e0a082;
 
   --color-zellige-teal: #1ba7a6;
-  --color-atlas-indigo: #2646a6;
   --color-charcoal: #2b2b2b;
 
-  /* Rose/brick for cancelled; teal for confirmed; terracotta for pending */
+  /* Rose for cancelled; teal for confirmed/new; terracotta for pending */
   --color-danger: #e25555;
   --color-success: #1ba7a6;
   --color-warning: #c46a3d;
-  --color-info: #2646a6;
+  --color-info: #1ba7a6;
 
-  /* Text */
-  --color-text-dark: #17314d;
-  --color-text-muted: #3d5460;
+  /* Text — warm dark / muted teal-grey (no blue) */
+  --color-text-dark: #1a2e2c;
+  --color-text-muted: #4a5c58;
 }
 
 :root {

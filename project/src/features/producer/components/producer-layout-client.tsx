@@ -1,12 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bell,
   CalendarDays,
   CreditCard,
+  Briefcase,
   Inbox,
   LayoutDashboard,
   ListChecks,
@@ -22,11 +23,13 @@ import {
   PAGE_SUBTITLE,
   getPageTitle,
 } from "../config";
+import { ProducerTopbarSearch } from "./layout/producer-topbar-search";
 const ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   "/producer": LayoutDashboard,
   "/producer/inbox": Inbox,
   "/producer/calendar": CalendarDays,
   "/producer/bookings": ListChecks,
+  "/producer/staff": Briefcase,
   "/producer/customers": Users,
   "/producer/payments": CreditCard,
   "/producer/settings": Wrench,
@@ -119,7 +122,7 @@ export function ProducerLayoutClient({ user, profile, children }: Props) {
         </nav>
 
         <div className="px-4 py-4 border-t border-white/8 shrink-0">
-          <div className="flex items-center gap-3">
+          <Link href="/producer/settings" className="flex items-center gap-3 rounded-xl px-1 py-1 -mx-1 hover:bg-white/5 transition-colors">
             <Avatar
               displayName={displayName}
               imageUrl={profile?.profileImage}
@@ -130,7 +133,7 @@ export function ProducerLayoutClient({ user, profile, children }: Props) {
               <span className="font-sans text-sm font-semibold text-white leading-tight truncate">{shortName}</span>
               <span className="font-sans text-[11px] text-white/40 leading-tight truncate">{entityLabel}</span>
             </div>
-          </div>
+          </Link>
         </div>
       </aside>
 
@@ -142,16 +145,20 @@ export function ProducerLayoutClient({ user, profile, children }: Props) {
             <h1 className="font-serif font-bold text-[18px] leading-tight producer-topbar-title">{title}</h1>
             <p className="font-sans text-sm mt-0.5 producer-topbar-subtitle">{subtitle}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-1 justify-end min-w-0">
+            <Suspense fallback={null}>
+              <ProducerTopbarSearch />
+            </Suspense>
             <button
               type="button"
               className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors producer-topbar-iconbtn"
+              aria-label="Notifications"
             >
               <Bell size={16} aria-hidden />
             </button>
             <Link
               href="/producer/inbox?new=1"
-              className="flex items-center gap-2 font-sans font-semibold text-sm rounded-xl px-5 py-2.5 transition-colors hover:opacity-90 producer-new-booking"
+              className="flex items-center gap-2 font-sans font-semibold text-sm rounded-xl px-5 py-2.5 transition-colors hover:opacity-90 producer-new-booking shrink-0"
             >
               <Plus size={16} aria-hidden />
               New Booking

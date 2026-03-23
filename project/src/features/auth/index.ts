@@ -1,7 +1,7 @@
 export { getSession, requireSession } from "~/app/api/auth/actions";
 export { getCallbackUrlForRole } from "./constants";
 export { useSession, getCallbackUrlForRole as getCallbackUrlForRoleClient } from "./hooks/use-auth";
-export { AuthLayout, inputCls, inputStyle, inputFocusStyle } from "./components/auth-layout";
+export { AuthLayout, inputCls } from "./components/auth-layout";
 export { AuthInput } from "./components/auth-input";
 export { AuthSelect } from "./components/auth-select";
 export { AuthField } from "./components/auth-field";
