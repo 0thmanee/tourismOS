@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_tokens.dart';
+import '../../favorites/state/favorites_store.dart';
 import '../data/home_feed_mock.dart';
 import 'widgets/experience_card.dart';
 import 'widgets/section_header.dart';
@@ -54,8 +56,15 @@ class HomeScreen extends StatelessWidget {
     final featured = HomeFeedMock.featuredFallback().map(_normalizeExperience).toList();
     return Scaffold(
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
+        child: Consumer(
+          builder: (context, ref, _) {
+            final savedIds = ref.watch(favoritesStoreProvider);
+            final savedItems = _allHomeExperiences()
+                .where((item) => savedIds.contains(item['id']))
+                .take(3)
+                .toList();
+            return CustomScrollView(
+              slivers: [
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               sliver: SliverToBoxAdapter(
@@ -348,6 +357,44 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            if (savedItems.isNotEmpty) ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: SectionHeader(
+                    title: 'Saved for later',
+                    actionLabel: 'See all',
+                    onAction: () => context.go('/app/explore/favorites'),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 290,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: savedItems.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, i) {
+                      final e = savedItems[i];
+                      return ExperienceCard(
+                        title: e['title'] as String,
+                        city: e['city'] as String,
+                        duration: e['duration'] as String,
+                        priceFromMad: e['priceFromMad'] as int,
+                        imageAsset: e['image'] as String?,
+                        verified: e['verified'] as bool,
+                        rating: e['rating'] as double?,
+                        onTap: () =>
+                            context.go('/app/home/experience/${e['id'] as String}'),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            ],
             for (final section in [
               'Best in Marrakech',
               'Desert escapes',
@@ -392,11 +439,31 @@ class HomeScreen extends StatelessWidget {
               const SliverToBoxAdapter(child: SizedBox(height: 16)),
             ],
             const SliverToBoxAdapter(child: SizedBox(height: 32)),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
   }
+}
+
+List<Map<String, dynamic>> _allHomeExperiences() {
+  final all = [
+    ...HomeFeedMock.featuredFallback(),
+    ...HomeFeedMock.curated('Best in Marrakech'),
+    ...HomeFeedMock.curated('Desert escapes'),
+    ...HomeFeedMock.curated('Authentic food'),
+  ];
+  final seen = <String>{};
+  final result = <Map<String, dynamic>>[];
+  for (final raw in all) {
+    final id = raw['id'] as String? ?? '';
+    if (id.isEmpty || seen.contains(id)) continue;
+    seen.add(id);
+    result.add(_normalizeExperience(raw));
+  }
+  return result;
 }
 
 class _HeroMediaCard extends StatelessWidget {

@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_tokens.dart';
+import '../../favorites/state/favorites_store.dart';
 import '../data/experience_detail_mock.dart';
 
-class ExperienceDetailScreen extends StatefulWidget {
+class ExperienceDetailScreen extends ConsumerStatefulWidget {
   const ExperienceDetailScreen({super.key, required this.experienceId});
 
   final String experienceId;
 
   @override
-  State<ExperienceDetailScreen> createState() => _ExperienceDetailScreenState();
+  ConsumerState<ExperienceDetailScreen> createState() => _ExperienceDetailScreenState();
 }
 
-class _ExperienceDetailScreenState extends State<ExperienceDetailScreen> {
+class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen> {
   int _galleryIndex = 0;
 
   @override
@@ -28,6 +30,7 @@ class _ExperienceDetailScreenState extends State<ExperienceDetailScreen> {
     final activityType = (detail['activityType'] as String?) ?? 'FIXED_SLOT';
     final bookingMode = (detail['bookingMode'] as String?) ?? 'INSTANT';
     final ctaLabel = _bookingCta(activityType, bookingMode);
+    final isSaved = ref.watch(favoritesStoreProvider).contains(widget.experienceId);
 
     return Scaffold(
       body: CustomScrollView(
@@ -36,6 +39,17 @@ class _ExperienceDetailScreenState extends State<ExperienceDetailScreen> {
             expandedHeight: 320,
             pinned: true,
             stretch: true,
+            actions: [
+              IconButton(
+                onPressed: () =>
+                    ref.read(favoritesStoreProvider.notifier).toggle(widget.experienceId),
+                icon: Icon(
+                  isSaved ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                ),
+                color: isSaved ? AppTokens.brandAccent : Colors.white,
+                tooltip: isSaved ? 'Unsave' : 'Save',
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,

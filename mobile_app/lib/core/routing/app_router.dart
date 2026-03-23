@@ -8,9 +8,12 @@ import '../../features/auth/presentation/email_signup_screen.dart';
 import '../../features/booking_flow/presentation/booking_flow_screen.dart';
 import '../../features/experience_detail/presentation/experience_detail_screen.dart';
 import '../../features/explore/presentation/explore_screen.dart';
+import '../../features/favorites/presentation/favorites_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/profile/presentation/settings_screen.dart';
+import '../../features/profile/presentation/support_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/trips/presentation/trips_screen.dart';
 import '../../features/trips/presentation/trip_detail_screen.dart';
@@ -96,6 +99,13 @@ GoRouter createAppRouter(LaunchController launch) {
                 path: '/app/explore',
                 name: 'explore',
                 builder: (context, state) => const ExploreScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'favorites',
+                    name: 'favorites',
+                    builder: (context, state) => const FavoritesScreen(),
+                  ),
+                ],
               ),
             ],
           ),
@@ -123,6 +133,18 @@ GoRouter createAppRouter(LaunchController launch) {
                 path: '/app/profile',
                 name: 'profile',
                 builder: (context, state) => const ProfileScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'settings',
+                    name: 'profile-settings',
+                    builder: (context, state) => const SettingsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'support',
+                    name: 'profile-support',
+                    builder: (context, state) => const SupportScreen(),
+                  ),
+                ],
               ),
             ],
           ),
