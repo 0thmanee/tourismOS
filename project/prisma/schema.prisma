@@ -21,6 +21,19 @@ enum UserStatus {
   enabled // can access /producer
 }
 
+// Activity catalog — drives booking behavior (same UI, different rules)
+enum ActivityKind {
+  FIXED_SLOT // time slots + capacity
+  FLEXIBLE // on-demand, operator confirms
+  MULTI_DAY // date range
+  RESOURCE_BASED // equipment/units capacity
+}
+
+enum PricingKind {
+  PER_PERSON
+  PER_GROUP
+}
+
 // ─── Better Auth (core) ─────────────────────────────────────────────────────
 model User {
   id               String     @id @default(cuid())
@@ -131,8 +144,47 @@ model Organization {
   bookings  Booking[]
   staffMembers StaffMember[]
   settings  OrganizationSettings?
+  activitiesCatalog Activity[]
 
   @@map("organization")
+}
+
+model Activity {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name        String
+  kind        ActivityKind
+  pricingKind PricingKind @default(PER_PERSON)
+
+  /** Max participants (people) — used for FIXED_SLOT / FLEXIBLE / MULTI_DAY */
+  capacity        Int?
+  /** For RESOURCE_BASED: max units (quads, boards) at once */
+  resourceCapacity Int?
+
+  /** JSON string[] "HH:mm" for FIXED_SLOT */
+  fixedSlots       Json     @default("[]")
+  /** JSON number[] — selectable day counts for MULTI_DAY */
+  durationOptions  Json     @default("[1,2,3]")
+  defaultDurationDays Int  @default(1)
+
+  requiresGuide     Boolean @default(false)
+  requiresTransport Boolean @default(false)
+  requiresEquipment Boolean @default(false)
+
+  defaultPriceMad Int?
+  isActive        Boolean @default(true)
+  sortOrder       Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings Booking[]
+
+  @@index([organizationId])
+  @@index([kind])
+  @@map("activity")
 }
 
 // MVP Step 1: operator business settings (activities + pricing presets)
@@ -207,10 +259,23 @@ model Booking {
   customerId String
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
+  /** Optional link to catalog activity (legacy rows may be null) */
+  activityId String?
+  activity   Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+
+  /** Denormalized from Activity.kind at booking time */
+  activityKind ActivityKind?
+
   activityTitle String
   startAt       DateTime
-  peopleCount   Int
-  priceCents    Int
+  /** End instant for multi-day / range display (inclusive planning) */
+  endAt         DateTime?
+
+  peopleCount Int
+  priceCents  Int
+
+  /** Type-specific payload: slotTime, resourceUnits, durationDays, etc. */
+  meta Json?
 
   // Inbox status
   status        String @default("NEW") // NEW | PENDING | CONFIRMED | CANCELLED
@@ -229,6 +294,7 @@ model Booking {
   @@index([organizationId])
   @@index([status])
   @@index([startAt])
+  @@index([activityId])
   @@map("booking")
 }
 

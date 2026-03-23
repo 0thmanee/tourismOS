@@ -1,37 +1,41 @@
 import React from "react";
 
 type Props = {
-  fullName: string;
-  email: string;
-  phone: string;
+	fullName: string;
+	email: string;
+	phone: string;
 };
 
 export function ProfilePersonalSection({ fullName, email, phone }: Props) {
-  const fields = [
-    { label: "Full Name", value: fullName },
-    { label: "Email Address", value: email },
-    { label: "Phone Number", value: phone },
-    { label: "Preferred Language", value: "French / Arabic" },
-  ];
+	const fields = [
+		{ label: "Full Name", value: fullName },
+		{ label: "Email Address", value: email },
+		{ label: "Phone Number", value: phone },
+		{ label: "Preferred Language", value: "French / Arabic" },
+	];
 
-  return (
-    <div className="rounded-xl overflow-hidden card">
-      <div className="px-5 py-4 border-b border-(--app-border)">
-        <h3 className="font-serif font-bold text-[15px] text-(--text-1)">Personal Information</h3>
-        <p className="font-sans text-[11px] text-(--text-2) mt-0.5">Your account and contact details</p>
-      </div>
-      <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {fields.map((field) => (
-          <div key={field.label} className="flex flex-col gap-1.5">
-            <label className="font-sans text-[10px] font-bold tracking-[0.12em] text-(--text-2) uppercase">
-              {field.label}
-            </label>
-            <div className="font-sans text-sm rounded-xl px-3.5 py-2.5 field">
-              {field.value || "—"}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+	return (
+		<div className="card overflow-hidden rounded-xl">
+			<div className="border-(--app-border) border-b px-5 py-4">
+				<h3 className="font-bold font-serif text-(--text-1) text-[15px]">
+					Personal Information
+				</h3>
+				<p className="mt-0.5 font-sans text-(--text-2) text-[11px]">
+					Your account and contact details
+				</p>
+			</div>
+			<div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
+				{fields.map((field) => (
+					<div className="flex flex-col gap-1.5" key={field.label}>
+						<label className="font-bold font-sans text-(--text-2) text-[10px] uppercase tracking-[0.12em]">
+							{field.label}
+						</label>
+						<div className="field rounded-xl px-3.5 py-2.5 font-sans text-sm">
+							{field.value || "—"}
+						</div>
+					</div>
+				))}
+			</div>
+		</div>
+	);
 }

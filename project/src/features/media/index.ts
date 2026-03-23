@@ -1,1 +1,5 @@
-export { useUploadProfileImage, mediaQueryKey, profileImageQueryKey } from "./hooks/use-media";
+export {
+	mediaQueryKey,
+	profileImageQueryKey,
+	useUploadProfileImage,
+} from "./hooks/use-media";

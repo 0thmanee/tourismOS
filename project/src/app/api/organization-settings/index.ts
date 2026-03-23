@@ -1,3 +1,9 @@
-export { getMyOrganizationSettings, updateMyOrganizationSettings } from "./actions";
+export {
+	getMyOrganizationSettings,
+	updateMyOrganizationSettings,
+} from "./actions";
 
-export type { OrganizationSettingsRow, UpdateOrganizationSettingsInput } from "./schemas/organization-settings.schema";
+export type {
+	OrganizationSettingsRow,
+	UpdateOrganizationSettingsInput,
+} from "./schemas/organization-settings.schema";

@@ -11,7 +11,7 @@
 
 import "dotenv/config";
 import { hashPassword } from "better-auth/crypto";
-import { PrismaClient } from "@prisma/client";
+import { type Prisma, PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 const connectionString = process.env.DATABASE_URL;
@@ -242,6 +242,7 @@ async function main() {
   await prisma.$transaction([
     prisma.bookingAssignment.deleteMany({ where: { booking: { organizationId: demoOrg.id } } }),
     prisma.booking.deleteMany({ where: { organizationId: demoOrg.id } }), // cascades messages
+    prisma.activity.deleteMany({ where: { organizationId: demoOrg.id } }),
     prisma.customer.deleteMany({ where: { organizationId: demoOrg.id } }),
     prisma.staffMember.deleteMany({ where: { organizationId: demoOrg.id } }),
     prisma.organizationSettings.deleteMany({ where: { organizationId: demoOrg.id } }),
@@ -296,6 +297,65 @@ async function main() {
   );
 
   const activeStaff = staffRows.filter((s) => s.isActive);
+
+  // —— 5b) Activity catalog (fixed / flexible / multi-day / resource) ——
+  const demoActivities = await Promise.all([
+    prisma.activity.create({
+      data: {
+        organizationId: demoOrg.id,
+        name: "Desert sunrise — fixed departures",
+        kind: "FIXED_SLOT",
+        pricingKind: "PER_PERSON",
+        capacity: 14,
+        fixedSlots: ["06:00", "08:00", "10:00"],
+        defaultPriceMad: 850,
+        sortOrder: 1,
+      },
+    }),
+    prisma.activity.create({
+      data: {
+        organizationId: demoOrg.id,
+        name: "Quad & palmeraie — on request",
+        kind: "FLEXIBLE",
+        pricingKind: "PER_PERSON",
+        capacity: 8,
+        defaultPriceMad: 650,
+        sortOrder: 2,
+      },
+    }),
+    prisma.activity.create({
+      data: {
+        organizationId: demoOrg.id,
+        name: "Atlas & Berber villages trek",
+        kind: "MULTI_DAY",
+        pricingKind: "PER_PERSON",
+        capacity: 10,
+        durationOptions: [2, 3, 5],
+        defaultDurationDays: 3,
+        defaultPriceMad: 2400,
+        sortOrder: 3,
+      },
+    }),
+    prisma.activity.create({
+      data: {
+        organizationId: demoOrg.id,
+        name: "Surf gear — half-day rental",
+        kind: "RESOURCE_BASED",
+        pricingKind: "PER_GROUP",
+        resourceCapacity: 6,
+        defaultPriceMad: 400,
+        sortOrder: 4,
+      },
+    }),
+  ]);
+
+  function multiDayEndAt(startAt: Date, durationDays: number): Date {
+    const end = new Date(startAt);
+    end.setHours(0, 0, 0, 0);
+    end.setDate(end.getDate() + Math.max(1, durationDays) - 1);
+    end.setHours(23, 59, 59, 999);
+    return end;
+  }
 
   // —— 6) Customers ——
   const customers: { id: string; name: string; phone: string }[] = [];
@@ -364,10 +424,53 @@ async function main() {
     const base = addDays(today, dayOffset);
     const hour = randomPick([8, 9, 10, 11, 14, 15, 16, 17, 18]);
     const minute = randomPick([0, 15, 30, 45]);
-    const startAt = atHour(base, hour, minute);
+
+    const useCatalog = Math.random() > 0.28;
+    const act = useCatalog ? randomPick(demoActivities) : null;
+
+    let activityTitle = randomPick(ACTIVITIES);
+    let activityId: string | null = null;
+    let activityKind: "FIXED_SLOT" | "FLEXIBLE" | "MULTI_DAY" | "RESOURCE_BASED" | null =
+      null;
+    let endAt: Date | null = null;
+    let meta: Prisma.InputJsonValue | null = null;
+
+    let startAt = atHour(base, hour, minute);
+
+    if (act) {
+      activityId = act.id;
+      activityKind = act.kind;
+      activityTitle = act.name;
+
+      if (act.kind === "FIXED_SLOT") {
+        const slots = Array.isArray(act.fixedSlots)
+          ? (act.fixedSlots as string[])
+          : ["09:00"];
+        const slot = randomPick(slots);
+        meta = { slotTime: slot } as Prisma.InputJsonValue;
+        const parts = slot.split(":");
+        const hNum = Number.parseInt(parts[0] ?? "9", 10);
+        const mNum = Number.parseInt(parts[1] ?? "0", 10);
+        startAt = atHour(
+          base,
+          Number.isNaN(hNum) ? 9 : hNum,
+          Number.isNaN(mNum) ? 0 : mNum,
+        );
+      } else if (act.kind === "MULTI_DAY") {
+        const dd = randomPick([2, 3, 5]);
+        meta = { durationDays: dd } as Prisma.InputJsonValue;
+        startAt = atHour(base, 9, 0);
+        endAt = multiDayEndAt(startAt, dd);
+      } else if (act.kind === "RESOURCE_BASED") {
+        meta = { resourceUnits: randomInt(1, 4) } as Prisma.InputJsonValue;
+      }
+    }
 
     const peopleCount = randomInt(1, 8);
-    const priceMad = randomInt(250, 3500);
+    let priceMad =
+      act?.defaultPriceMad != null && Math.random() > 0.45
+        ? act.defaultPriceMad
+        : randomInt(250, 3500);
     const priceCents = priceMad * 100;
 
     let depositCents: number | null = null;
@@ -382,8 +485,12 @@ async function main() {
       data: {
         organizationId: demoOrg.id,
         customerId: cust.id,
-        activityTitle: randomPick(ACTIVITIES),
+        activityId,
+        activityKind,
+        activityTitle,
         startAt,
+        endAt,
+        meta: meta ?? undefined,
         peopleCount,
         priceCents,
         status,

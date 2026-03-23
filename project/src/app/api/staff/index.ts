@@ -1,19 +1,19 @@
 export {
-  listMyStaffMembers,
-  createStaffMember,
-  updateStaffMember,
-  deleteStaffMember,
-  listAssignmentsForMyBooking,
-  assignStaffToBooking,
-  unassignStaffFromBooking,
+	assignStaffToBooking,
+	createStaffMember,
+	deleteStaffMember,
+	listAssignmentsForMyBooking,
+	listMyStaffMembers,
+	unassignStaffFromBooking,
+	updateStaffMember,
 } from "./actions";
 
 export type {
-  StaffRole,
-  StaffMemberRow,
-  BookingAssignmentRow,
-  CreateStaffMemberInput,
-  UpdateStaffMemberInput,
-  AssignStaffInput,
-  UnassignStaffInput,
+	AssignStaffInput,
+	BookingAssignmentRow,
+	CreateStaffMemberInput,
+	StaffMemberRow,
+	StaffRole,
+	UnassignStaffInput,
+	UpdateStaffMemberInput,
 } from "./schemas/staff.schema";

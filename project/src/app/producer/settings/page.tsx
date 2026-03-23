@@ -2,7 +2,7 @@ import { getMyOrganizationSettings } from "~/app/api/organization-settings/actio
 import { OperatorSettingsForm } from "~/features/producer/components/settings/operator-settings-form";
 
 export default async function SettingsPage() {
-  const initial = await getMyOrganizationSettings();
+	const initial = await getMyOrganizationSettings();
 
-  return <OperatorSettingsForm initial={initial} />;
+	return <OperatorSettingsForm initial={initial} />;
 }
