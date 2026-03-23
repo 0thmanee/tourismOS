@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../state/trips_store.dart';
 
@@ -11,10 +12,26 @@ class TripDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trips = ref.watch(tripsStoreProvider);
-    final trip = trips.cast<Map<String, dynamic>>().firstWhere(
-          (t) => (t['bookingId'] as String?) == bookingId,
-          orElse: () => trips.first,
-        );
+    if (trips.isEmpty) {
+      return _TripDetailStateScaffold(
+        title: 'Trip not found',
+        message: 'We could not load this trip yet. Return to Trips and try again.',
+        primaryLabel: 'Back to Trips',
+        onPrimary: () => context.go('/app/trips'),
+      );
+    }
+    final matched = trips.cast<Map<String, dynamic>>().where(
+      (t) => (t['bookingId'] as String?) == bookingId,
+    );
+    if (matched.isEmpty) {
+      return _TripDetailStateScaffold(
+        title: 'This booking is unavailable',
+        message: 'The booking reference is invalid or no longer available.',
+        primaryLabel: 'Back to Trips',
+        onPrimary: () => context.go('/app/trips'),
+      );
+    }
+    final trip = matched.first;
 
     final status = trip['status'] as String? ?? 'Confirmed';
     final paymentStatus = trip['paymentStatus'] as String? ?? 'Unknown';
@@ -22,7 +39,27 @@ class TripDetailScreen extends ConsumerWidget {
     final dateLabel = startAt != null
         ? '${startAt.day}/${startAt.month}/${startAt.year}'
         : (trip['dateLabel'] as String? ?? 'Date TBD');
+    final friendlyDate = _friendlyDateLabel(startAt);
     final timeLabel = trip['timeLabel'] as String? ?? 'Time TBD';
+    final isPending = status.toLowerCase() == 'pending';
+    final isDepositPaid = paymentStatus.toLowerCase().contains('deposit');
+    final isMultiDay = (trip['bookingType'] as String? ?? '').contains('MULTI_DAY');
+    final nextTitle = isPending
+        ? 'Waiting for operator confirmation'
+        : isDepositPaid
+            ? 'Your spot is secured'
+            : 'You are ready for your trip';
+    final nextSubtitle = isPending
+        ? 'We notify you as soon as the operator confirms availability and final timing.'
+        : isDepositPaid
+            ? 'Pay the remaining amount on arrival and keep your booking reference ready.'
+            : 'Arrive 15 minutes early and present your voucher at the meeting point.';
+    final logisticsHint = isPending
+        ? 'Exact pickup instructions are shared once the operator confirms your request.'
+        : 'Exact directions and final reminder are available in your voucher.';
+    final dayOneHint = isMultiDay
+        ? 'This is a multi-day package. Review day-1 meeting details carefully.'
+        : 'This is a single-day experience.';
 
     return Scaffold(
       body: CustomScrollView(
@@ -86,11 +123,19 @@ class TripDetailScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
+                  _WhatNextCard(
+                    title: nextTitle,
+                    subtitle: nextSubtitle,
+                    status: status,
+                    paymentStatus: paymentStatus,
+                    isPending: isPending,
+                  ),
+                  const SizedBox(height: 12),
                   _InfoCard(
                     title: 'Booking summary',
                     rows: [
                       ['Booking ID', '${trip['bookingId']}'],
-                      ['Date', dateLabel],
+                      ['Date', '$friendlyDate ($dateLabel)'],
                       ['Time', timeLabel],
                       ['City', '${trip['city']}'],
                       ['Operator', '${trip['operatorName']}'],
@@ -101,37 +146,12 @@ class TripDetailScreen extends ConsumerWidget {
                     title: 'Meeting and logistics',
                     rows: [
                       ['Meeting point', '${trip['meetingPoint']}'],
-                      ['Type', '${trip['bookingType']}'],
-                      ['Status', status],
+                      ['Arrival', 'Be there 15 minutes before start'],
+                      ['Type', '${trip['bookingType']} • $dayOneHint'],
+                      ['Details', logisticsHint],
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'What\'s next',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  const _TimelineStep(
-                    icon: Icons.mark_email_read_rounded,
-                    title: 'Confirmation received',
-                    subtitle: 'Your reservation details are ready.',
-                    done: true,
-                  ),
-                  const _TimelineStep(
-                    icon: Icons.pin_drop_rounded,
-                    title: 'Meeting point reminder',
-                    subtitle: 'You\'ll get a reminder before departure.',
-                    done: true,
-                  ),
-                  _TimelineStep(
-                    icon: Icons.event_available_rounded,
-                    title: 'Day of activity',
-                    subtitle: 'Arrive 10 minutes early with your booking ID.',
-                    done: status != 'Pending',
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   Text(
                     'Documents',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -150,6 +170,27 @@ class TripDetailScreen extends ConsumerWidget {
                     subtitle: 'Payment and booking status summary',
                     onTap: () => _showDoc(context, 'Receipt', trip),
                   ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.support_agent_rounded),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Need help? Contact support with booking ID ${trip['bookingId']}.',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -157,6 +198,19 @@ class TripDetailScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _friendlyDateLabel(DateTime? startAt) {
+    if (startAt == null) return 'Date soon';
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(startAt.year, startAt.month, startAt.day);
+    final diffDays = target.difference(today).inDays;
+    if (diffDays == 0) return 'Today';
+    if (diffDays == 1) return 'Tomorrow';
+    if (diffDays > 1 && diffDays <= 6) return 'In $diffDays days';
+    if (diffDays >= 0 && target.weekday >= DateTime.friday) return 'This weekend';
+    return '${startAt.day}/${startAt.month}/${startAt.year}';
   }
 
   void _showDoc(BuildContext context, String docType, Map<String, dynamic> trip) {
@@ -176,6 +230,64 @@ class TripDetailScreen extends ConsumerWidget {
             child: const Text('Close'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TripDetailStateScaffold extends StatelessWidget {
+  const _TripDetailStateScaffold({
+    required this.title,
+    required this.message,
+    required this.primaryLabel,
+    required this.onPrimary,
+  });
+
+  final String title;
+  final String message;
+  final String primaryLabel;
+  final VoidCallback onPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Trip detail')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  message,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: onPrimary,
+                  child: Text(primaryLabel),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -238,6 +350,103 @@ class _InfoCard extends StatelessWidget {
   }
 }
 
+class _WhatNextCard extends StatelessWidget {
+  const _WhatNextCard({
+    required this.title,
+    required this.subtitle,
+    required this.status,
+    required this.paymentStatus,
+    required this.isPending,
+  });
+
+  final String title;
+  final String subtitle;
+  final String status;
+  final String paymentStatus;
+  final bool isPending;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Theme.of(context).colorScheme.primaryContainer,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isPending ? Icons.hourglass_top_rounded : Icons.event_available_rounded,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                "What's next",
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _InlineMeta(text: status),
+              _InlineMeta(text: paymentStatus),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InlineMeta extends StatelessWidget {
+  const _InlineMeta({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: Colors.black.withValues(alpha: 0.12),
+      ),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
+      ),
+    );
+  }
+}
+
 class _Pill extends StatelessWidget {
   const _Pill({required this.text, required this.icon});
 
@@ -257,64 +466,11 @@ class _Pill extends StatelessWidget {
         children: [
           Icon(icon, size: 16),
           const SizedBox(width: 6),
-          Text(text),
-        ],
-      ),
-    );
-  }
-}
-
-class _TimelineStep extends StatelessWidget {
-  const _TimelineStep({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.done,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final bool done;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: done
-                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
-                  : Theme.of(context).colorScheme.surfaceContainerHighest,
-            ),
-            alignment: Alignment.center,
-            child: Icon(icon, size: 18),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+          Text(
+            text,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-              ],
-            ),
           ),
         ],
       ),

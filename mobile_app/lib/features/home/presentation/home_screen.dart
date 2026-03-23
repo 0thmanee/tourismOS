@@ -48,12 +48,36 @@ IconData _categoryIcon(String? key) {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _isInitialLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _runInitialLoading(fromInit: true);
+  }
+
+  void _runInitialLoading({bool fromInit = false}) {
+    if (!fromInit) {
+      setState(() => _isInitialLoading = true);
+    }
+    Future<void>.delayed(const Duration(milliseconds: 650), () {
+      if (!mounted) return;
+      setState(() => _isInitialLoading = false);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final featured = HomeFeedMock.featuredFallback().map(_normalizeExperience).toList();
+    final hasContent = featured.isNotEmpty;
     return Scaffold(
       body: SafeArea(
         child: Consumer(
@@ -63,6 +87,20 @@ class HomeScreen extends StatelessWidget {
                 .where((item) => savedIds.contains(item['id']))
                 .take(3)
                 .toList();
+            if (_isInitialLoading) {
+              return const _HomeLoadingView();
+            }
+            if (!hasContent) {
+              return _HomeStateCard(
+                title: 'Home is temporarily unavailable',
+                message:
+                    'We could not load recommendations right now. Please retry or explore manually.',
+                primaryLabel: 'Retry',
+                onPrimary: _runInitialLoading,
+                secondaryLabel: 'Browse Explore',
+                onSecondary: () => context.go('/app/explore'),
+              );
+            }
             return CustomScrollView(
               slivers: [
             SliverPadding(
@@ -442,6 +480,92 @@ class HomeScreen extends StatelessWidget {
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeLoadingView extends StatelessWidget {
+  const _HomeLoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    final base = Theme.of(context).colorScheme.surfaceContainerHighest;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+      children: [
+        Container(height: 34, width: 240, color: base),
+        const SizedBox(height: 8),
+        Container(height: 14, width: 280, color: base),
+        const SizedBox(height: 14),
+        Container(height: 290, color: base),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: Container(height: 140, color: base)),
+            const SizedBox(width: 10),
+            Expanded(child: Container(height: 140, color: base)),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Container(height: 54, color: base),
+      ],
+    );
+  }
+}
+
+class _HomeStateCard extends StatelessWidget {
+  const _HomeStateCard({
+    required this.title,
+    required this.message,
+    required this.primaryLabel,
+    required this.onPrimary,
+    required this.secondaryLabel,
+    required this.onSecondary,
+  });
+
+  final String title;
+  final String message;
+  final String primaryLabel;
+  final VoidCallback onPrimary;
+  final String secondaryLabel;
+  final VoidCallback onSecondary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                message,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              FilledButton(onPressed: onPrimary, child: Text(primaryLabel)),
+              TextButton(onPressed: onSecondary, child: Text(secondaryLabel)),
+            ],
+          ),
         ),
       ),
     );

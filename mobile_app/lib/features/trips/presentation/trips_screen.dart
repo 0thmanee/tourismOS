@@ -15,6 +15,16 @@ class TripsScreen extends ConsumerStatefulWidget {
 
 class _TripsScreenState extends ConsumerState<TripsScreen> {
   _TripsFilter _filter = _TripsFilter.all;
+  bool _isInitialLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(const Duration(milliseconds: 650), () {
+      if (!mounted) return;
+      setState(() => _isInitialLoading = false);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +48,9 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('My Trips')),
       body: SafeArea(
-        child: ListView(
+        child: _isInitialLoading
+            ? const _TripsLoadingView()
+            : ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
           children: [
             Text(
@@ -163,13 +175,46 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
                 alignment: Alignment.centerLeft,
                 child: FilledButton.tonal(
                   onPressed: () => setState(() => _filter = _TripsFilter.all),
-                  child: const Text('Show all trips'),
+                  child: const Text('View all trips'),
                 ),
               ),
             ],
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TripsLoadingView extends StatelessWidget {
+  const _TripsLoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    final base = Theme.of(context).colorScheme.surfaceContainerHighest;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      children: [
+        Container(height: 30, width: 220, color: base),
+        const SizedBox(height: 8),
+        Container(height: 14, width: 280, color: base),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(child: Container(height: 84, color: base)),
+            const SizedBox(width: 8),
+            Expanded(child: Container(height: 84, color: base)),
+            const SizedBox(width: 8),
+            Expanded(child: Container(height: 84, color: base)),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(height: 210, color: base),
+        const SizedBox(height: 12),
+        Container(height: 120, color: base),
+        const SizedBox(height: 10),
+        Container(height: 120, color: base),
+      ],
     );
   }
 }
@@ -374,7 +419,7 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
         color: color,

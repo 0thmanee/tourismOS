@@ -6,11 +6,35 @@ import '../../../core/theme/app_tokens.dart';
 import '../../favorites/state/favorites_store.dart';
 import '../../home/data/home_feed_mock.dart';
 
-class FavoritesScreen extends ConsumerWidget {
+class FavoritesScreen extends ConsumerStatefulWidget {
   const FavoritesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FavoritesScreen> createState() => _FavoritesScreenState();
+}
+
+class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
+  bool _isInitialLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _runInitialLoading(fromInit: true);
+  }
+
+  void _runInitialLoading({bool fromInit = false}) {
+    if (!fromInit) {
+      setState(() => _isInitialLoading = true);
+    }
+    Future<void>.delayed(const Duration(milliseconds: 550), () {
+      if (!mounted) return;
+      setState(() => _isInitialLoading = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
     final savedIds = ref.watch(favoritesStoreProvider);
     final all = _allExploreItems();
     final saved = all.where((e) => savedIds.contains(e['id'])).toList();
@@ -18,7 +42,9 @@ class FavoritesScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Saved experiences')),
       body: SafeArea(
-        child: ListView(
+        child: _isInitialLoading
+            ? const _FavoritesLoadingView()
+            : ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
           children: [
             Text(
@@ -61,9 +87,19 @@ class FavoritesScreen extends ConsumerWidget {
                           ),
                     ),
                     const SizedBox(height: 10),
-                    FilledButton.tonal(
-                      onPressed: () => context.go('/app/explore'),
-                      child: const Text('Browse Explore'),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilledButton.tonal(
+                          onPressed: () => context.go('/app/explore'),
+                          child: const Text('Browse Explore'),
+                        ),
+                        OutlinedButton(
+                          onPressed: _runInitialLoading,
+                          child: const Text('Retry'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -75,6 +111,29 @@ class FavoritesScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _FavoritesLoadingView extends StatelessWidget {
+  const _FavoritesLoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    final base = Theme.of(context).colorScheme.surfaceContainerHighest;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      children: [
+        Container(height: 30, width: 220, color: base),
+        const SizedBox(height: 8),
+        Container(height: 14, width: 300, color: base),
+        const SizedBox(height: 14),
+        Container(height: 108, color: base),
+        const SizedBox(height: 10),
+        Container(height: 108, color: base),
+        const SizedBox(height: 10),
+        Container(height: 108, color: base),
+      ],
     );
   }
 }

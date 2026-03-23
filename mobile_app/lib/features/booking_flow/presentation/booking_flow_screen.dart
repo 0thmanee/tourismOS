@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../experience_detail/data/experience_detail_mock.dart';
 import '../../trips/state/trips_store.dart';
@@ -56,16 +57,28 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
   @override
   Widget build(BuildContext context) {
     final detail = ExperienceDetailMock.get(widget.experienceId);
+    final title = detail['title'] as String? ?? '';
+    if (title.trim().isEmpty) {
+      return _BookingStateScaffold(
+        title: 'Booking unavailable',
+        message:
+            'This experience cannot be booked right now. Please return to Explore and choose another option.',
+        primaryLabel: 'Back to Explore',
+        onPrimary: () => context.go('/app/explore'),
+      );
+    }
     final activityType = (detail['activityType'] as String?) ?? 'FIXED_SLOT';
     final bookingMode = (detail['bookingMode'] as String?) ?? 'INSTANT';
+    final depositMad = (detail['depositMad'] as int?) ?? 0;
     final slots = ((detail['availableSlots'] as List<dynamic>?) ?? ['10:00'])
         .cast<String>();
+    final isLastStep = _step == _steps.length - 1;
 
     if (!slots.contains(_selectedSlot)) {
       _selectedSlot = slots.first;
     }
 
-    final ctaLabel = _step == _steps.length - 1
+    final ctaLabel = isLastStep
         ? 'Done'
         : _step == _steps.length - 2
             ? 'Confirm booking'
@@ -96,46 +109,69 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
               const SizedBox(height: 12),
               Expanded(
                 child: SingleChildScrollView(
-                  child: _buildStep(context, detail, activityType, bookingMode, slots),
+                  child: _buildStep(
+                    context,
+                    detail,
+                    activityType,
+                    bookingMode,
+                    slots,
+                    depositMad,
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              _BottomSummary(
-                priceFromMad: detail['priceFromMad'] as int,
-                guests: _guests,
-                bookingMode: bookingMode,
-                depositMad: (detail['depositMad'] as int?) ?? 0,
-                paymentChoice: _paymentChoice,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  if (_step > 0)
+              if (!isLastStep) ...[
+                _BottomSummary(
+                  priceFromMad: detail['priceFromMad'] as int,
+                  guests: _guests,
+                  bookingMode: bookingMode,
+                  depositMad: depositMad,
+                  paymentChoice: _paymentChoice,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    if (_step > 0)
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => setState(() => _step -= 1),
+                          child: const Text('Back'),
+                        ),
+                      ),
+                    if (_step > 0) const SizedBox(width: 8),
                     Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => setState(() => _step -= 1),
-                        child: const Text('Back'),
+                      child: FilledButton(
+                        onPressed: () => setState(() => _step += 1),
+                        child: Text(ctaLabel),
                       ),
                     ),
-                  if (_step > 0) const SizedBox(width: 8),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () {
-                        if (_step < _steps.length - 1) {
-                          setState(() => _step += 1);
-                        } else {
-                          if (!_savedToTrips) {
-                            _saveToTrips(detail, activityType, bookingMode);
-                            _savedToTrips = true;
-                          }
-                          Navigator.of(context).pop();
-                        }
-                      },
-                      child: Text(ctaLabel),
-                    ),
+                  ],
+                ),
+              ] else ...[
+                FilledButton.icon(
+                  onPressed: () {
+                    if (!_savedToTrips) {
+                      _saveToTrips(detail, activityType, bookingMode);
+                      _savedToTrips = true;
+                    }
+                    context.go('/app/trips');
+                  },
+                  icon: const Icon(Icons.luggage_rounded),
+                  label: const Text('View in Trips'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  onPressed: () => context.go('/app/home'),
+                  child: const Text('Back to Home'),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => context.go('/app/explore'),
+                    child: const Text('Explore more'),
                   ),
-                ],
-              ),
+                ),
+              ],
               const SizedBox(height: 12),
             ],
           ),
@@ -150,6 +186,7 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
     String activityType,
     String bookingMode,
     List<String> slots,
+    int depositMad,
   ) {
     switch (_step) {
       case 0:
@@ -207,6 +244,8 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
           selectedDate: _selectedDate,
           selectedSlot: _selectedSlot,
           bookingMode: bookingMode,
+          paymentChoice: _paymentChoice,
+          depositMad: depositMad,
           travelers: _guests,
           meetingPoint: detail['meetingPoint'] as String? ?? '',
           totalMad: (detail['priceFromMad'] as int) * _guests,
@@ -705,6 +744,8 @@ class _ConfirmationStep extends StatelessWidget {
     required this.selectedDate,
     required this.selectedSlot,
     required this.bookingMode,
+    required this.paymentChoice,
+    required this.depositMad,
     required this.travelers,
     required this.meetingPoint,
     required this.totalMad,
@@ -716,13 +757,38 @@ class _ConfirmationStep extends StatelessWidget {
   final String selectedDate;
   final String selectedSlot;
   final String bookingMode;
+  final String paymentChoice;
+  final int depositMad;
   final int travelers;
   final String meetingPoint;
   final int totalMad;
 
   @override
   Widget build(BuildContext context) {
-    final confirmed = bookingMode != 'REQUEST';
+    final isRequest = bookingMode == 'REQUEST';
+    final isDepositFlow = !isRequest && paymentChoice == 'deposit' && depositMad > 0;
+    final headline = isRequest
+        ? 'Request sent'
+        : isDepositFlow
+            ? 'Spot secured'
+            : 'Booking confirmed';
+    final supportLine = isRequest
+        ? 'The operator usually confirms within a few hours. We will notify you as soon as status changes.'
+        : isDepositFlow
+            ? 'Your deposit is paid and your spot is secured. Pay the remaining amount on arrival.'
+            : 'Your booking is confirmed and all essential trip details are ready.';
+    final statusLine = isRequest
+        ? 'Awaiting operator confirmation'
+        : isDepositFlow
+            ? 'Deposit paid'
+            : 'Fully confirmed';
+    final nextStep = isRequest
+        ? 'Operator reviews your request and confirms availability.'
+        : isDepositFlow
+            ? 'Arrive 15 minutes early and pay the remaining balance on-site.'
+            : 'Show your voucher at meeting point and enjoy your experience.';
+    final confirmed = !isRequest;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -737,13 +803,13 @@ class _ConfirmationStep extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
-                confirmed ? Icons.verified_rounded : Icons.hourglass_top_rounded,
+                isRequest ? Icons.hourglass_top_rounded : Icons.verified_rounded,
                 color: Theme.of(context).colorScheme.onPrimaryContainer,
                 size: 40,
               ),
               const SizedBox(height: 10),
               Text(
-                confirmed ? 'Booking confirmed' : 'Request sent',
+                headline,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w900,
                       color: Theme.of(context).colorScheme.onPrimaryContainer,
@@ -751,9 +817,7 @@ class _ConfirmationStep extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                confirmed
-                    ? 'Your reservation is secured. Your travel documents are ready below.'
-                    : 'Your request is with the operator. Documents are prepared as draft until confirmation.',
+                supportLine,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context)
                           .colorScheme
@@ -775,10 +839,53 @@ class _ConfirmationStep extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        _bookingLine(context, 'Experience', title),
-        _bookingLine(context, 'City', city),
-        _bookingLine(context, 'Meeting point', meetingPoint),
-        _bookingLine(context, 'Total', '$totalMad MAD'),
+        _SectionCard(
+          title: "What's next",
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _bookingLine(context, 'Status', statusLine),
+              _bookingLine(context, 'Next step', nextStep),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        _SectionCard(
+          title: 'Booking summary',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _bookingLine(context, 'Experience', title),
+              _bookingLine(context, 'When', '$selectedDate • $selectedSlot'),
+              _bookingLine(context, 'Travelers', '$travelers traveler(s)'),
+              _bookingLine(context, 'Payment', statusLine),
+              _bookingLine(context, 'Meeting point', meetingPoint),
+              _bookingLine(context, 'Total', '$totalMad MAD'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.support_agent_rounded),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Need help? Support is available in Trips with your booking reference.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
         Text(
           'Documents',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -813,7 +920,7 @@ Travelers: $travelers
 Reference: $bookingRef
 Experience: $title
 Total: $totalMad MAD
-Status: ${confirmed ? 'Confirmed' : 'Awaiting approval'}
+Status: $statusLine
 Issued at: ${DateTime.now()}
 '''),
         ),
@@ -895,6 +1002,38 @@ Mock export generated:
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Close'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          const SizedBox(height: 8),
+          child,
         ],
       ),
     );
@@ -988,7 +1127,7 @@ class _MetaPill extends StatelessWidget {
         label,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: Theme.of(context).colorScheme.onPrimaryContainer,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
       ),
     );
@@ -1041,6 +1180,64 @@ class _BottomSummary extends StatelessWidget {
                 ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _BookingStateScaffold extends StatelessWidget {
+  const _BookingStateScaffold({
+    required this.title,
+    required this.message,
+    required this.primaryLabel,
+    required this.onPrimary,
+  });
+
+  final String title;
+  final String message;
+  final String primaryLabel;
+  final VoidCallback onPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Booking')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  message,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: onPrimary,
+                  child: Text(primaryLabel),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

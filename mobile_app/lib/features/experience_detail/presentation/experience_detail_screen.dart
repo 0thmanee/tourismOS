@@ -21,7 +21,19 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
   @override
   Widget build(BuildContext context) {
     final detail = ExperienceDetailMock.get(widget.experienceId);
-    final gallery = (detail['gallery'] as List<dynamic>).cast<String>();
+    final rawGallery = (detail['gallery'] as List<dynamic>? ?? const <dynamic>[]);
+    final gallery = rawGallery.cast<String>();
+    final hasRequiredContent =
+        (detail['title'] as String?) != null && (detail['title'] as String).trim().isNotEmpty;
+    if (!hasRequiredContent || gallery.isEmpty) {
+      return _DetailStateScaffold(
+        title: 'Experience unavailable',
+        message:
+            'We could not load this experience right now. Please go back to Explore and try another one.',
+        primaryLabel: 'Back to Explore',
+        onPrimary: () => context.go('/app/explore'),
+      );
+    }
     final highlights = (detail['highlights'] as List<dynamic>).cast<String>();
     final includes = (detail['includes'] as List<dynamic>).cast<String>();
     final price = detail['priceFromMad'] as int;
@@ -259,6 +271,64 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailStateScaffold extends StatelessWidget {
+  const _DetailStateScaffold({
+    required this.title,
+    required this.message,
+    required this.primaryLabel,
+    required this.onPrimary,
+  });
+
+  final String title;
+  final String message;
+  final String primaryLabel;
+  final VoidCallback onPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Experience')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  message,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: onPrimary,
+                  child: Text(primaryLabel),
+                ),
+              ],
+            ),
           ),
         ),
       ),
