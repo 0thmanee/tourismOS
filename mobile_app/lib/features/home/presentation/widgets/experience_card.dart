@@ -9,6 +9,7 @@ class ExperienceCard extends StatelessWidget {
     required this.city,
     required this.duration,
     required this.priceFromMad,
+    this.imageAsset,
     this.verified = false,
     this.rating,
     this.onTap,
@@ -18,6 +19,7 @@ class ExperienceCard extends StatelessWidget {
   final String city;
   final String duration;
   final int priceFromMad;
+  final String? imageAsset;
   final bool verified;
   final double? rating;
   final VoidCallback? onTap;
@@ -36,15 +38,38 @@ class ExperienceCard extends StatelessWidget {
             children: [
               AspectRatio(
                 aspectRatio: 16 / 10,
-                child: Container(
-                  color: AppTokens.brandPrimary.withValues(
-                    alpha: 0.35,
-                  ),
-                  child: Icon(
-                    Icons.image_outlined,
-                    size: 40,
-                    color: AppTokens.brandAccent,
-                  ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (imageAsset != null)
+                      Image.asset(
+                        imageAsset!,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.topCenter,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                    Container(
+                      color: AppTokens.brandPrimary.withValues(alpha: 0.22),
+                    ),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.03),
+                            Colors.black.withValues(alpha: 0.26),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (imageAsset == null)
+                      Icon(
+                        Icons.image_outlined,
+                        size: 40,
+                        color: AppTokens.brandAccent,
+                      ),
+                  ],
                 ),
               ),
               Padding(
@@ -54,7 +79,8 @@ class ExperienceCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
                   ),
                 ),
               ),

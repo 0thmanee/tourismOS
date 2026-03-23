@@ -62,6 +62,7 @@ flutter:
   assets:
     - assets/images/splash/
     - assets/images/onboarding/
+    - assets/images/home/
   fonts:
     - family: Manrope
       fonts:

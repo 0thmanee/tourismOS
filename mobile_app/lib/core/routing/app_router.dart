@@ -5,12 +5,15 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/auth_screen.dart';
 import '../../features/auth/presentation/email_auth_screen.dart';
 import '../../features/auth/presentation/email_signup_screen.dart';
+import '../../features/booking_flow/presentation/booking_flow_screen.dart';
+import '../../features/experience_detail/presentation/experience_detail_screen.dart';
 import '../../features/explore/presentation/explore_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/trips/presentation/trips_screen.dart';
+import '../../features/trips/presentation/trip_detail_screen.dart';
 import '../state/launch_controller.dart';
 
 /// Single [GoRouter] instance for the whole app — create once (e.g. in [main.dart]).
@@ -66,6 +69,24 @@ GoRouter createAppRouter(LaunchController launch) {
                 path: '/app/home',
                 name: 'home',
                 builder: (context, state) => const HomeScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'experience/:id',
+                    name: 'experience-detail',
+                    builder: (context, state) => ExperienceDetailScreen(
+                      experienceId: state.pathParameters['id'] ?? 'agafay-quad',
+                    ),
+                    routes: [
+                      GoRoute(
+                        path: 'book',
+                        name: 'booking-flow',
+                        builder: (context, state) => BookingFlowScreen(
+                          experienceId: state.pathParameters['id'] ?? 'agafay-quad',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
@@ -84,6 +105,15 @@ GoRouter createAppRouter(LaunchController launch) {
                 path: '/app/trips',
                 name: 'trips',
                 builder: (context, state) => const TripsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'detail/:bookingId',
+                    name: 'trip-detail',
+                    builder: (context, state) => TripDetailScreen(
+                      bookingId: state.pathParameters['bookingId'] ?? '',
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

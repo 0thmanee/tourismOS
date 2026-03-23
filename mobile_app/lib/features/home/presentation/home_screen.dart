@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/state/launch_providers.dart';
-import '../../experiences/state/experiences_providers.dart';
+import '../../../core/theme/app_tokens.dart';
 import '../data/home_feed_mock.dart';
 import 'widgets/experience_card.dart';
 import 'widgets/section_header.dart';
@@ -18,395 +16,574 @@ Map<String, dynamic> _normalizeExperience(Map<String, dynamic> raw) {
     priceMad = ((raw['priceCents'] as num) / 100).round();
   }
   return {
+    'id': raw['id'] ?? '',
     'title': raw['title'] ?? 'Experience',
     'city': raw['city'] ?? '',
     'duration': raw['duration'] ?? '',
     'priceFromMad': priceMad,
     'verified': raw['verified'] == true,
     'rating': raw['rating'] is num ? (raw['rating'] as num).toDouble() : null,
+    'image': raw['image'] as String?,
   };
 }
 
 IconData _categoryIcon(String? key) {
   switch (key) {
     case 'museum':
-      return Icons.museum_outlined;
+      return Icons.mosque_rounded;
     case 'terrain':
-      return Icons.terrain_outlined;
+      return Icons.landscape_rounded;
     case 'restaurant':
-      return Icons.restaurant_outlined;
+      return Icons.restaurant_menu_rounded;
     case 'wb_sunny':
-      return Icons.wb_sunny_outlined;
+      return Icons.wb_sunny_rounded;
     case 'surfing':
-      return Icons.surfing_outlined;
+      return Icons.kayaking_rounded;
     case 'forest':
-      return Icons.forest_outlined;
+      return Icons.forest_rounded;
     default:
-      return Icons.category_outlined;
+      return Icons.explore_rounded;
   }
 }
 
-/// Home: greeting, search → Explore, featured carousel, categories, cities, curated lists.
-///
-/// States: skeleton loading, empty fallback, inline API error with retry.
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final featuredAsync = ref.watch(featuredExperiencesProvider);
-    final launch = ref.watch(launchControllerProvider);
-    final cityHint = launch.preferredCity;
-
+  Widget build(BuildContext context) {
+    final featured = HomeFeedMock.featuredFallback().map(_normalizeExperience).toList();
     return Scaffold(
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(featuredExperiencesProvider);
-            await ref.read(featuredExperiencesProvider.future);
-          },
-          child: CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Discover Morocco',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Discover Morocco',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontSize: 40,
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Big moments. Clear booking. Beautiful journeys.',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    _HeroMediaCard(
+                      imageAsset: HomeFeedMock.hero['image'] as String,
+                      title: HomeFeedMock.hero['title'] as String,
+                      subtitle: HomeFeedMock.hero['subtitle'] as String,
+                      ctaPrimary: HomeFeedMock.hero['ctaPrimary'] as String,
+                      ctaSecondary: HomeFeedMock.hero['ctaSecondary'] as String,
+                      onPrimary: () => context.go(
+                        '/app/home/experience/${HomeFeedMock.hero['experienceId']}',
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        cityHint != null
-                            ? 'Ideas for $cityHint — plus more destinations below.'
-                            : 'Find unforgettable local experiences',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                      ),
-                      const SizedBox(height: 16),
-                      Material(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(14),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(14),
-                          onTap: () => context.go('/app/explore'),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.search,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      onSecondary: () => context.go('/app/trips'),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _QuickActionCard(
+                            title: HomeFeedMock.quickActions[0]['title'] as String,
+                            subtitle:
+                                HomeFeedMock.quickActions[0]['subtitle'] as String,
+                            imageAsset:
+                                HomeFeedMock.quickActions[0]['image'] as String,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _QuickActionCard(
+                            title: HomeFeedMock.quickActions[1]['title'] as String,
+                            subtitle:
+                                HomeFeedMock.quickActions[1]['subtitle'] as String,
+                            imageAsset:
+                                HomeFeedMock.quickActions[1]['image'] as String,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Material(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(16),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () => context.go('/app/explore'),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.search,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Search experiences, cities, categories…',
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                      ),
                                 ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    'Search experiences, cities…',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant,
-                                        ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 20)),
-              SliverToBoxAdapter(
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            SliverToBoxAdapter(
+              child: SectionHeader(
+                title: 'Featured experiences',
+                actionLabel: 'See all',
+                onAction: () => context.go('/app/explore'),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 290,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: featured.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, i) {
+                    final e = featured[i];
+                    return ExperienceCard(
+                      title: e['title'] as String,
+                      city: e['city'] as String,
+                      duration: e['duration'] as String,
+                      priceFromMad: e['priceFromMad'] as int,
+                      imageAsset: e['image'] as String?,
+                      verified: e['verified'] as bool,
+                      rating: e['rating'] as double?,
+                      onTap: () =>
+                          context.go('/app/home/experience/${e['id'] as String}'),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 8)),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: SectionHeader(
-                  title: 'Featured experiences',
-                  actionLabel: 'See all',
+                  title: 'Categories',
+                  actionLabel: 'Explore',
                   onAction: () => context.go('/app/explore'),
                 ),
               ),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 112,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: HomeFeedMock.categories.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                  itemBuilder: (context, i) {
+                    final c = HomeFeedMock.categories[i];
+                    return InkWell(
+                      onTap: () => context.go('/app/explore'),
+                      borderRadius: BorderRadius.circular(18),
+                      child: Container(
+                        width: 112,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          color: const Color(0xFF0F231E),
+                          border: Border.all(
+                            color: AppTokens.brandAccent.withValues(alpha: 0.24),
+                            width: 0.8,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.16),
+                              blurRadius: 16,
+                              offset: const Offset(0, 7),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 12,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF17342D),
+                                  borderRadius: BorderRadius.circular(13),
+                                  border: Border.all(
+                                    color: AppTokens.brandAccent.withValues(alpha: 0.3),
+                                    width: 0.7,
+                                  ),
+                                ),
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  _categoryIcon(c['icon'] as String?),
+                                  color: AppTokens.brandAccent,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(height: 9),
+                              Text(
+                                c['label'] as String? ?? '',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.1,
+                                      color: const Color(0xFFF7F3EA),
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: const SectionHeader(title: 'Popular cities'),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 170,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: HomeFeedMock.cities.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, i) {
+                    final city = HomeFeedMock.cities[i]['name'] as String;
+                    final imageAsset = HomeFeedMock.cities[i]['image'] as String?;
+                    return InkWell(
+                      onTap: () => context.go('/app/explore'),
+                      borderRadius: BorderRadius.circular(18),
+                      child: Container(
+                        width: 220,
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            if (imageAsset != null)
+                              Image.asset(
+                                imageAsset,
+                                fit: BoxFit.cover,
+                                alignment: Alignment.topCenter,
+                                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                              ),
+                            Container(
+                              color: Colors.black.withValues(alpha: 0.18),
+                            ),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0),
+                                    Colors.black.withValues(alpha: 0.44),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              left: 12,
+                              right: 12,
+                              bottom: 12,
+                              child: Text(
+                                city,
+                                style:
+                                    Theme.of(context).textTheme.titleLarge?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 26,
+                                        ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            for (final section in [
+              'Best in Marrakech',
+              'Desert escapes',
+              'Authentic food',
+            ]) ...[
               SliverToBoxAdapter(
-                child: featuredAsync.when(
-                  data: (items) {
-                    final list = items.isEmpty
-                        ? HomeFeedMock.featuredFallback()
-                        : items.map(_normalizeExperience).toList();
-                    return SizedBox(
-                      height: 268,
-                      child: ListView.separated(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: SectionHeader(title: section),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 290,
+                  child: Builder(
+                    builder: (context) {
+                      final items = HomeFeedMock.curated(section);
+                      return ListView.separated(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         scrollDirection: Axis.horizontal,
-                        itemCount: list.length,
+                        itemCount: items.length,
                         separatorBuilder: (_, __) => const SizedBox(width: 12),
                         itemBuilder: (context, i) {
-                          final e = list[i];
+                          final e = _normalizeExperience(items[i]);
                           return ExperienceCard(
                             title: e['title'] as String,
                             city: e['city'] as String,
                             duration: e['duration'] as String,
                             priceFromMad: e['priceFromMad'] as int,
+                            imageAsset: e['image'] as String?,
                             verified: e['verified'] as bool,
                             rating: e['rating'] as double?,
-                            onTap: () {
-                              /* Experience detail — next slice */
-                            },
+                            onTap: () =>
+                                context.go('/app/home/experience/${e['id'] as String}'),
                           );
                         },
-                      ),
-                    );
-                  },
-                  loading: () => SizedBox(
-                    height: 268,
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      scrollDirection: Axis.horizontal,
-                      itemCount: 3,
-                      separatorBuilder: (_, __) => const SizedBox(width: 12),
-                      itemBuilder: (_, __) => const _CardSkeleton(),
-                    ),
-                  ),
-                  error: (err, __) => Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'Could not load featured list.',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '$err',
-                          maxLines: 5,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        FilledButton.tonal(
-                          onPressed: () =>
-                              ref.invalidate(featuredExperiencesProvider),
-                          child: const Text('Retry'),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          height: 268,
-                          child: ListView.separated(
-                            padding: EdgeInsets.zero,
-                            scrollDirection: Axis.horizontal,
-                            itemCount: HomeFeedMock.featuredFallback().length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(width: 12),
-                            itemBuilder: (context, i) {
-                              final e = _normalizeExperience(
-                                HomeFeedMock.featuredFallback()[i],
-                              );
-                              return ExperienceCard(
-                                title: e['title'] as String,
-                                city: e['city'] as String,
-                                duration: e['duration'] as String,
-                                priceFromMad: e['priceFromMad'] as int,
-                                verified: e['verified'] as bool,
-                                rating: e['rating'] as double?,
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 8)),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: SectionHeader(
-                    title: 'Categories',
-                    actionLabel: 'Explore',
-                    onAction: () => context.go('/app/explore'),
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 96,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: HomeFeedMock.categories.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 10),
-                    itemBuilder: (context, i) {
-                      final c = HomeFeedMock.categories[i];
-                      return InkWell(
-                        onTap: () => context.go('/app/explore'),
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          width: 84,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.outlineVariant,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                _categoryIcon(c['icon'] as String?),
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                c['label'] as String? ?? '',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.labelSmall,
-                              ),
-                            ],
-                          ),
-                        ),
                       );
                     },
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 12)),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: const SectionHeader(title: 'Popular cities'),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 120,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: HomeFeedMock.cities.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
-                    itemBuilder: (context, i) {
-                      final city = HomeFeedMock.cities[i]['name'] as String;
-                      return InkWell(
-                        onTap: () => context.go('/app/explore'),
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          width: 160,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            gradient: LinearGradient(
-                              colors: [
-                                Theme.of(context)
-                                    .colorScheme
-                                    .primaryContainer
-                                    .withValues(alpha: 0.9),
-                                Theme.of(context)
-                                    .colorScheme
-                                    .secondaryContainer
-                                    .withValues(alpha: 0.5),
-                              ],
-                            ),
-                          ),
-                          child: Text(
-                            city,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 20)),
-              for (final section in [
-                'Best in Marrakech',
-                'Desert escapes',
-                'Authentic food',
-              ]) ...[
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: SectionHeader(title: section),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: 268,
-                    child: Builder(
-                      builder: (context) {
-                        final items = HomeFeedMock.curated(section);
-                        return ListView.separated(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          scrollDirection: Axis.horizontal,
-                          itemCount: items.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 12),
-                          itemBuilder: (context, i) {
-                            final e = _normalizeExperience(items[i]);
-                            return ExperienceCard(
-                              title: e['title'] as String,
-                              city: e['city'] as String,
-                              duration: e['duration'] as String,
-                              priceFromMad: e['priceFromMad'] as int,
-                              verified: e['verified'] as bool,
-                              rating: e['rating'] as double?,
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 16)),
-              ],
-              const SliverToBoxAdapter(child: SizedBox(height: 32)),
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
             ],
-          ),
+            const SliverToBoxAdapter(child: SizedBox(height: 32)),
+          ],
         ),
       ),
     );
   }
 }
 
-class _CardSkeleton extends StatelessWidget {
-  const _CardSkeleton();
+class _HeroMediaCard extends StatelessWidget {
+  const _HeroMediaCard({
+    required this.imageAsset,
+    required this.title,
+    required this.subtitle,
+    required this.ctaPrimary,
+    required this.ctaSecondary,
+    required this.onPrimary,
+    required this.onSecondary,
+  });
+
+  final String imageAsset;
+  final String title;
+  final String subtitle;
+  final String ctaPrimary;
+  final String ctaSecondary;
+  final VoidCallback onPrimary;
+  final VoidCallback onSecondary;
 
   @override
   Widget build(BuildContext context) {
-    final base = Theme.of(context).colorScheme.surfaceContainerHighest;
-    return SizedBox(
-      width: 260,
-      child: Card(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AspectRatio(
-              aspectRatio: 16 / 10,
-              child: Container(color: base),
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+            child: SizedBox(
+              height: 245,
+              width: double.infinity,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    imageAsset,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.topCenter,
+                    errorBuilder: (_, __, ___) => Container(color: AppTokens.forestMid),
+                  ),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.02),
+                          Colors.black.withValues(alpha: 0.22),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 12,
+                    top: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.88),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        'Editor\'s pick',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(12),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontSize: 31,
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: onPrimary,
+                        child: Text(ctaPrimary),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: onSecondary,
+                        child: Text(ctaSecondary),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  const _QuickActionCard({
+    required this.title,
+    required this.subtitle,
+    required this.imageAsset,
+  });
+
+  final String title;
+  final String subtitle;
+  final String imageAsset;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {},
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 140,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset(
+              imageAsset,
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+              errorBuilder: (_, __, ___) => Container(color: AppTokens.forestMid),
+            ),
+            Container(color: Colors.black.withValues(alpha: 0.22)),
+            Positioned(
+              left: 10,
+              right: 10,
+              bottom: 10,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(height: 14, width: 180, color: base),
-                  const SizedBox(height: 8),
-                  Container(height: 12, width: 120, color: base),
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 20,
+                        ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
                 ],
               ),
             ),
