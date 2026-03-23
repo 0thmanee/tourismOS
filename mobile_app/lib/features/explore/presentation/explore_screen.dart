@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/data/app_mock_data.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../favorites/state/favorites_store.dart';
 import '../../home/data/home_feed_mock.dart';
@@ -23,26 +24,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
   _ExploreSort _sort = _ExploreSort.recommended;
   _PriceRange _priceRange = _PriceRange.any;
   bool _isInitialLoading = true;
-  static const List<String> _categories = [
-    'Culture',
-    'Adventure',
-    'Food',
-    'Desert',
-    'Nature',
-  ];
-
-  static const Map<String, String> _categoryByExperienceId = {
-    'agafay-quad': 'Adventure',
-    'atlas-hike': 'Nature',
-    'taghazout-surf': 'Adventure',
-    'medina-food-stories': 'Food',
-    'marrakech-rooftop-dinner': 'Food',
-    'agafay-camp-evening': 'Desert',
-    'merzouga-camel-ride': 'Desert',
-    'fes-cooking-class': 'Culture',
-    'essaouira-ocean-grill': 'Food',
-  };
-
   @override
   void initState() {
     super.initState();
@@ -227,7 +208,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                             selected: _activeCategories.isEmpty
                                                 ? 'All'
                                                 : _activeCategories.first,
-                                            options: const ['All', ..._categories],
+                                            options: const ['All', ...AppMockData.exploreFilterCategories],
                                             labelBuilder: (value) => value,
                                           ),
                                         );
@@ -532,7 +513,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
         'rating': (raw['rating'] as num?)?.toDouble() ?? 4.6,
         'verified': raw['verified'] == true,
         'image': raw['image'] as String?,
-        'category': _categoryByExperienceId[id] ?? 'Culture',
+        'category': AppMockData.exploreCategoryByExperienceId[id] ?? 'Culture',
       });
     }
     return result;

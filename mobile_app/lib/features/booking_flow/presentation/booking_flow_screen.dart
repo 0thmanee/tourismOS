@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/data/app_mock_data.dart';
 import '../../experience_detail/data/experience_detail_mock.dart';
 import '../../trips/state/trips_store.dart';
 
@@ -25,8 +26,8 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
   ];
 
   int _step = 0;
-  String _selectedDate = 'Sat, Mar 28';
-  String _selectedSlot = '10:30';
+  String _selectedDate = AppMockData.bookingDefaultDate;
+  String _selectedSlot = AppMockData.bookingDefaultSlot;
   int _guests = 2;
   int _durationDays = 1;
   int _resourceUnits = 1;
@@ -40,9 +41,9 @@ class _BookingFlowScreenState extends ConsumerState<BookingFlowScreen> {
   @override
   void initState() {
     super.initState();
-    _nameCtrl.text = 'Othmane A.';
-    _phoneCtrl.text = '+212 6XX XX XX XX';
-    _emailCtrl.text = 'traveler@example.com';
+    _nameCtrl.text = AppMockData.bookingDemoTravelerName;
+    _phoneCtrl.text = AppMockData.bookingDemoTravelerPhone;
+    _emailCtrl.text = AppMockData.bookingDemoTravelerEmail;
   }
 
   @override
@@ -306,7 +307,7 @@ class _DateStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const dates = ['Fri, Mar 27', 'Sat, Mar 28', 'Sun, Mar 29', 'Mon, Mar 30'];
+    const dates = AppMockData.bookingDemoDateOptions;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

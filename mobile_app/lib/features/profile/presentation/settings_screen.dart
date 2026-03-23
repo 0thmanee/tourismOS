@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/data/app_mock_data.dart';
+
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -58,7 +60,7 @@ class SettingsScreen extends StatelessWidget {
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
             ),
             child: Text(
-              'Morocco Experiences v1.0.0 (MVP)',
+              AppMockData.settingsVersionLabel,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),

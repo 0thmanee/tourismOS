@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/data/app_mock_data.dart';
 import '../../../core/state/launch_providers.dart';
 import '../../../core/theme/app_tokens.dart';
 
@@ -53,7 +54,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               Icon(Icons.explore_rounded, size: 56, color: AppTokens.brandAccent),
               const SizedBox(height: 16),
               Text(
-                'Welcome to Morocco Experiences',
+                'Welcome to ${AppMockData.appBrandName}',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: AppTokens.textInverse,

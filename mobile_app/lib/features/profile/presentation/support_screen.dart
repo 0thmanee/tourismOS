@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/data/app_mock_data.dart';
+
 class SupportScreen extends StatelessWidget {
   const SupportScreen({super.key});
 
@@ -30,12 +32,12 @@ class SupportScreen extends StatelessWidget {
           _HelpCard(
             icon: Icons.mail_outline_rounded,
             title: 'Email us',
-            subtitle: 'support@morocco-experiences.app',
+            subtitle: AppMockData.supportEmail,
           ),
           _HelpCard(
             icon: Icons.call_outlined,
             title: 'Call support',
-            subtitle: '+212 5XX XX XX XX',
+            subtitle: AppMockData.supportPhonePlaceholder,
           ),
           const SizedBox(height: 16),
           Container(

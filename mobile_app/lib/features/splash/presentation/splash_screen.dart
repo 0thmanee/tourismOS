@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/data/app_mock_data.dart';
 import '../../../core/state/launch_providers.dart';
 import '../../../core/theme/app_tokens.dart';
 
@@ -153,7 +154,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Text(
-                          'Authentic activities, one trusted place',
+                          AppMockData.appTagline,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
