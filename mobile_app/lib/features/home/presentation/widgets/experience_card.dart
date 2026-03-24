@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_tokens.dart';
+import '../../../../core/widgets/catalog_image.dart';
 
 /// Home / list card spec: image, title, city, duration, price from, optional verified.
 class ExperienceCard extends StatelessWidget {
@@ -9,7 +10,7 @@ class ExperienceCard extends StatelessWidget {
     required this.city,
     required this.duration,
     required this.priceFromMad,
-    this.imageAsset,
+    this.imageRef,
     this.verified = false,
     this.rating,
     this.onTap,
@@ -19,7 +20,9 @@ class ExperienceCard extends StatelessWidget {
   final String city;
   final String duration;
   final int priceFromMad;
-  final String? imageAsset;
+
+  /// Asset path (e.g. `assets/...`) or `http(s)` URL from the API.
+  final String? imageRef;
   final bool verified;
   final double? rating;
   final VoidCallback? onTap;
@@ -41,13 +44,11 @@ class ExperienceCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    if (imageAsset != null)
-                      Image.asset(
-                        imageAsset!,
-                        fit: BoxFit.cover,
-                        alignment: Alignment.topCenter,
-                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                      ),
+                    CatalogImage(
+                      ref: imageRef,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
+                    ),
                     Container(
                       color: AppTokens.brandPrimary.withValues(alpha: 0.22),
                     ),
@@ -63,12 +64,6 @@ class ExperienceCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (imageAsset == null)
-                      Icon(
-                        Icons.image_outlined,
-                        size: 40,
-                        color: AppTokens.brandAccent,
-                      ),
                   ],
                 ),
               ),

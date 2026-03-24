@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/catalog_image.dart';
+import '../../experiences/domain/experience.dart';
+import '../../experiences/state/catalog_providers.dart';
 import '../../favorites/state/favorites_store.dart';
-import '../data/experience_detail_mock.dart';
 
 class ExperienceDetailScreen extends ConsumerStatefulWidget {
   const ExperienceDetailScreen({super.key, required this.experienceId});
@@ -12,7 +14,8 @@ class ExperienceDetailScreen extends ConsumerStatefulWidget {
   final String experienceId;
 
   @override
-  ConsumerState<ExperienceDetailScreen> createState() => _ExperienceDetailScreenState();
+  ConsumerState<ExperienceDetailScreen> createState() =>
+      _ExperienceDetailScreenState();
 }
 
 class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen> {
@@ -20,29 +23,80 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final detail = ExperienceDetailMock.get(widget.experienceId);
-    final rawGallery = (detail['gallery'] as List<dynamic>? ?? const <dynamic>[]);
-    final gallery = rawGallery.cast<String>();
-    final hasRequiredContent =
-        (detail['title'] as String?) != null && (detail['title'] as String).trim().isNotEmpty;
-    if (!hasRequiredContent || gallery.isEmpty) {
-      return _DetailStateScaffold(
+    final asyncExp = ref.watch(experienceDetailProvider(widget.experienceId));
+
+    return asyncExp.when(
+      loading: () => Scaffold(
+        appBar: AppBar(
+          title: const Text('Experience'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            tooltip: 'Back',
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/app/home');
+              }
+            },
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, __) => _DetailStateScaffold(
         title: 'Experience unavailable',
         message:
-            'We could not load this experience right now. Please go back to Explore and try another one.',
-        primaryLabel: 'Back to Explore',
-        onPrimary: () => context.go('/app/explore'),
-      );
-    }
-    final highlights = (detail['highlights'] as List<dynamic>).cast<String>();
-    final includes = (detail['includes'] as List<dynamic>).cast<String>();
-    final price = detail['priceFromMad'] as int;
-    final rating = (detail['rating'] as num?)?.toDouble();
-    final verified = detail['verified'] == true;
-    final activityType = (detail['activityType'] as String?) ?? 'FIXED_SLOT';
-    final bookingMode = (detail['bookingMode'] as String?) ?? 'INSTANT';
-    final ctaLabel = _bookingCta(activityType, bookingMode);
+            'We could not load this experience. Check your connection or try again.',
+        primaryLabel: 'Retry',
+        onPrimary: () =>
+            ref.invalidate(experienceDetailProvider(widget.experienceId)),
+        secondaryLabel: 'Back to Explore',
+        onSecondary: () => context.go('/app/explore'),
+      ),
+      data: (detail) {
+        final gallery = detail.media.orderedGalleryRefs;
+        final hasRequiredContent = detail.title.trim().isNotEmpty && gallery.isNotEmpty;
+        if (!hasRequiredContent) {
+          return _DetailStateScaffold(
+            title: 'Experience unavailable',
+            message:
+                'We could not load this experience right now. Please go back to Explore and try another one.',
+            primaryLabel: 'Back to Explore',
+            onPrimary: () => context.go('/app/explore'),
+          );
+        }
+        if (_galleryIndex >= gallery.length) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _galleryIndex = 0);
+          });
+        }
+        return _buildLoaded(context, detail, gallery);
+      },
+    );
+  }
+
+  Widget _buildLoaded(
+    BuildContext context,
+    Experience detail,
+    List<String> gallery,
+  ) {
+    final idx = _galleryIndex.clamp(0, gallery.length - 1);
+    final highlights = detail.content.highlights;
+    final includes = detail.content.includes;
+    final price = detail.price.fromMad;
+    final rating = detail.rating.average;
+    final reviewsCount = detail.rating.reviewsCount;
+    final verified = detail.trust.verifiedOperator;
+    final ctaLabel = _bookingCta(detail);
     final isSaved = ref.watch(favoritesStoreProvider).contains(widget.experienceId);
+    final confirmationCopy = detail.trust.confirmationLabel ??
+        (detail.uiTreatAsRequestBooking
+            ? 'Request-based confirmation'
+            : 'Instant confirmation');
+    final responseCopy =
+        detail.trust.responseTimeLabel ?? 'Details shared after booking';
+    final cancellationCopy =
+        detail.trust.cancellationLabel ?? 'Per operator policy';
 
     return Scaffold(
       body: CustomScrollView(
@@ -78,11 +132,11 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.asset(
-                    gallery[_galleryIndex],
+                  CatalogImage(
+                    ref: gallery[idx],
                     fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
-                    errorBuilder: (_, __, ___) => Container(color: AppTokens.forestMid),
+                    errorColor: AppTokens.forestMid,
                   ),
                   DecoratedBox(
                     decoration: BoxDecoration(
@@ -101,7 +155,7 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
                     right: 16,
                     bottom: 16,
                     child: Text(
-                      detail['title'] as String,
+                      detail.title,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w900,
@@ -122,17 +176,20 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
                     children: [
                       Icon(Icons.location_on_rounded, color: AppTokens.text2, size: 18),
                       const SizedBox(width: 4),
-                      Text(detail['city'] as String),
+                      Text(detail.city),
                       const SizedBox(width: 12),
                       if (rating != null) ...[
                         const Icon(Icons.star_rounded, color: AppTokens.brandAccent),
-                        Text('${rating.toStringAsFixed(1)} (${detail['reviewsCount']})'),
+                        Text(
+                          '${rating.toStringAsFixed(1)}'
+                          '${reviewsCount != null ? ' ($reviewsCount)' : ''}',
+                        ),
                       ],
                     ],
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    detail['summary'] as String? ?? '',
+                    detail.summary,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -145,19 +202,19 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
                     children: [
                       _InfoPill(
                         icon: Icons.schedule_rounded,
-                        label: detail['duration'] as String,
+                        label: detail.logistics.durationLabel,
                       ),
                       _InfoPill(
                         icon: Icons.people_alt_rounded,
-                        label: detail['groupSize'] as String? ?? 'Small group',
+                        label: detail.logistics.groupSizeLabel ?? 'Small group',
                       ),
                       _InfoPill(
                         icon: Icons.translate_rounded,
-                        label: detail['languages'] as String? ?? 'EN',
+                        label: detail.logistics.languagesJoined,
                       ),
                       _InfoPill(
                         icon: Icons.policy_rounded,
-                        label: detail['cancellation'] as String,
+                        label: cancellationCopy,
                       ),
                     ],
                   ),
@@ -165,18 +222,41 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
                   _SectionCard(
                     title: 'Highlights',
                     child: Column(
-                      children: highlights
-                          .map((item) => _BulletLine(text: item, icon: Icons.check_circle))
-                          .toList(),
+                      children: highlights.isEmpty
+                          ? [
+                              Text(
+                                'Highlights will appear here when the operator adds them.',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ]
+                          : highlights
+                              .map((item) => _BulletLine(text: item, icon: Icons.check_circle))
+                              .toList(),
                     ),
                   ),
                   const SizedBox(height: 12),
                   _SectionCard(
-                    title: 'What\'s included',
+                    title: "What's included",
                     child: Column(
-                      children: includes
-                          .map((item) => _BulletLine(text: item, icon: Icons.add_task_rounded))
-                          .toList(),
+                      children: includes.isEmpty
+                          ? [
+                              Text(
+                                'Inclusions will appear here when the operator adds them.',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ]
+                          : includes
+                              .map(
+                                (item) => _BulletLine(
+                                  text: item,
+                                  icon: Icons.add_task_rounded,
+                                ),
+                              )
+                              .toList(),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -186,15 +266,17 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          detail['meetingPoint'] as String,
+                          detail.logistics.meetingPoint.isNotEmpty
+                              ? detail.logistics.meetingPoint
+                              : 'The operator will confirm the meeting point after booking.',
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          detail['meetingNote'] as String? ??
-                              'Exact instructions are shared after booking.',
+                          detail.logistics.meetingNote ??
+                              'Exact instructions are shared after booking confirmation.',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
@@ -208,21 +290,21 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
                     child: Column(
                       children: [
                         _BulletLine(
-                          text: verified ? 'Verified operator profile' : 'Trusted operator profile',
+                          text: verified
+                              ? 'Verified operator profile'
+                              : 'Trusted operator profile',
                           icon: Icons.workspace_premium_rounded,
                         ),
                         _BulletLine(
-                          text: bookingMode == 'REQUEST'
-                              ? 'Request-based confirmation'
-                              : 'Instant confirmation',
+                          text: confirmationCopy,
                           icon: Icons.flash_on_rounded,
                         ),
                         _BulletLine(
-                          text: detail['responseTime'] as String,
+                          text: responseCopy,
                           icon: Icons.bolt_rounded,
                         ),
                         _BulletLine(
-                          text: detail['cancellation'] as String,
+                          text: cancellationCopy,
                           icon: Icons.policy_rounded,
                         ),
                       ],
@@ -231,7 +313,7 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
                   const SizedBox(height: 16),
                   _InteractiveGallery(
                     images: gallery,
-                    selectedIndex: _galleryIndex,
+                    selectedIndex: idx,
                     onSelected: (value) => setState(() => _galleryIndex = value),
                   ),
                   const SizedBox(height: 94),
@@ -267,7 +349,7 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
                           ),
                     ),
                     Text(
-                      'per person',
+                      detail.price.pricingLabel,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
@@ -296,12 +378,16 @@ class _DetailStateScaffold extends StatelessWidget {
     required this.message,
     required this.primaryLabel,
     required this.onPrimary,
+    this.secondaryLabel,
+    this.onSecondary,
   });
 
   final String title;
   final String message;
   final String primaryLabel;
   final VoidCallback onPrimary;
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
 
   @override
   Widget build(BuildContext context) {
@@ -311,7 +397,7 @@ class _DetailStateScaffold extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           tooltip: 'Back',
-          onPressed: onPrimary,
+          onPressed: onSecondary ?? onPrimary,
         ),
       ),
       body: Center(
@@ -346,6 +432,13 @@ class _DetailStateScaffold extends StatelessWidget {
                   onPressed: onPrimary,
                   child: Text(primaryLabel),
                 ),
+                if (secondaryLabel != null && onSecondary != null) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: onSecondary,
+                    child: Text(secondaryLabel!),
+                  ),
+                ],
               ],
             ),
           ),
@@ -388,11 +481,11 @@ class _InteractiveGallery extends StatelessWidget {
                 child: SizedBox(
                   height: 190,
                   width: double.infinity,
-                  child: Image.asset(
-                    images[selectedIndex],
+                  child: CatalogImage(
+                    ref: images[selectedIndex],
                     fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
-                    errorBuilder: (_, __, ___) => Container(color: AppTokens.creamDark),
+                    errorColor: AppTokens.creamDark,
                   ),
                 ),
               ),
@@ -441,12 +534,11 @@ class _InteractiveGallery extends StatelessWidget {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      images[i],
+                    child: CatalogImage(
+                      ref: images[i],
                       fit: BoxFit.cover,
                       alignment: Alignment.topCenter,
-                      errorBuilder: (_, __, ___) =>
-                          Container(color: AppTokens.creamDark),
+                      errorColor: AppTokens.creamDark,
                     ),
                   ),
                 ),
@@ -477,7 +569,12 @@ class _InteractiveGallery extends StatelessWidget {
                       minScale: 1,
                       maxScale: 4,
                       child: Center(
-                        child: Image.asset(images[i], fit: BoxFit.contain),
+                        child: CatalogImage(
+                          ref: images[i],
+                          fit: BoxFit.contain,
+                          alignment: Alignment.center,
+                          errorColor: Colors.black,
+                        ),
                       ),
                     ),
                   ),
@@ -518,11 +615,11 @@ class _InteractiveGallery extends StatelessWidget {
   }
 }
 
-String _bookingCta(String activityType, String bookingMode) {
-  if (bookingMode == 'REQUEST') {
-    return activityType == 'MULTI_DAY' ? 'Check availability' : 'Request booking';
+String _bookingCta(Experience e) {
+  if (e.uiTreatAsRequestBooking) {
+    return e.kind == 'MULTI_DAY' ? 'Check availability' : 'Request booking';
   }
-  switch (activityType) {
+  switch (e.kind) {
     case 'FIXED_SLOT':
     case 'RESOURCE_BASED':
       return 'Book now';

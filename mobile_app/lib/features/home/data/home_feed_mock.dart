@@ -1,6 +1,6 @@
 import '../../../core/data/app_mock_data.dart';
 
-/// Placeholder catalog until `GET /api/experiences` is live.
+/// Placeholder catalog until Home/Explore consume `GET /api/v1/experiences`.
 class HomeFeedMock {
   static const hero = AppMockData.hero;
   static const categories = AppMockData.categories;

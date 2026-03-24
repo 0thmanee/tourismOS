@@ -15,4 +15,16 @@ class TripsStore extends StateNotifier<List<TripItem>> {
   void addTrip(TripItem item) {
     state = [item, ...state];
   }
+
+  void prependTrip(TripItem item) {
+    final id = item['bookingId'] as String?;
+    final rest = id == null
+        ? state
+        : state.where((t) => t['bookingId'] != id).toList();
+    state = [item, ...rest];
+  }
+
+  void replaceAll(List<TripItem> items) {
+    state = List<TripItem>.from(items);
+  }
 }

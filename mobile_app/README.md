@@ -4,6 +4,8 @@ A Flutter mobile app for discovering, shortlisting, booking, and managing Morocc
 
 This README documents the app as it exists right now: architecture, routes, states, feature behavior, data contracts, and current implementation notes.
 
+**Platform alignment (mobile vs producer web):** repo docs at `../docs/md/Mobile_App_vs_Producer_Web_Alignment.md` (gaps) and `../docs/md/Unified_B2C_API_and_Domain_Strategy.md` (target API + DTOs + migration phases).
+
 ## 1) Tech stack and foundations
 
 - Flutter (Material 3)
@@ -450,7 +452,20 @@ Support options:
 - `tripsStoreProvider` -> `List<Map<String, dynamic>>` (`StateNotifierProvider`)
 - `dioProvider` -> configured `Dio`
 - `experiencesApiProvider` -> `ExperiencesApi`
-- `featuredExperiencesProvider` -> async featured list fetch
+- `featuredExperiencesProvider` -> async `GET /v1/experiences` (raw maps; optional)
+- `marketplaceCatalogProvider` -> `MarketplaceCatalogState` (items + facet strings); mock or API via flag
+- `experienceDetailProvider.family` -> `Experience` for detail screen
+
+### Phase 3 (booking write) — submission boundary
+
+- **Do not** build `POST /v1/bookings` JSON from raw wizard widget state.
+- **Do** add a single mapper from an explicit draft → `BookingCreateRequest` (see `docs/md/Unified_B2C_API_and_Domain_Strategy.md` §6.2 and §8.1). Server types: `project/src/app/api/v1/_lib/booking-contract.types.ts`.
+
+### Catalog feature flag
+
+- `AppEnv.useRemoteCatalog` from `--dart-define=USE_REMOTE_CATALOG=true`
+- When **false** (default): `marketplaceCatalogProvider` uses merged mock catalog; hero/categories/cities stay editorial mocks
+- When **true**: catalog loads `GET /api/v1/experiences` (see `API_BASE_URL`); Home featured + Explore + Detail use the shared `Experience` model (`lib/features/experiences/domain/experience.dart`)
 
 ### Stores
 
@@ -521,17 +536,17 @@ Typical keys:
 
 ## 9) API integration status
 
-Current API-facing pieces:
+API client (`ExperiencesApi`):
 
-- `ExperiencesApi.listFeatured()` calls `GET /experiences` with optional query:
-  - `city`
-  - `category`
-  - `featured=1`
+- `listFeatured()` — `GET /v1/experiences` with `featured=1` (optional city/category)
+- `listExperiencesResponse()` — same endpoint with `page`, `pageSize`, `sort`, etc.; returns full JSON (`items` + `meta`)
+- `fetchExperienceItem(id)` — `GET /v1/experiences/:id`
 
-Current UI wiring status:
+UI wiring (Phase 2):
 
-- UI currently relies primarily on centralized mocks for catalog and details
-- API provider layer exists and is ready for incremental replacement of mock-driven sections
+- **Detail → Explore → Home** read from `Experience` (DTO mapped once in `experience_dto_mapper.dart` / mock in `experience_mock_mapper.dart`)
+- **Remote catalog**: `flutter run --dart-define=USE_REMOTE_CATALOG=true --dart-define=API_BASE_URL=http://<host>:3000/api`
+- Editorial blocks on Home (hero, category chips, city cards, quick actions) remain mock-driven until a CMS or config API exists
 
 ## 10) Theming and design system
 

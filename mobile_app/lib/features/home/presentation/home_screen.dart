@@ -2,32 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config/app_env.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../experiences/data/experience_mock_mapper.dart';
+import '../../experiences/domain/experience.dart';
+import '../../experiences/state/catalog_helpers.dart';
+import '../../experiences/state/catalog_providers.dart';
 import '../../favorites/state/favorites_store.dart';
 import '../data/home_feed_mock.dart';
 import 'widgets/experience_card.dart';
 import 'widgets/section_header.dart';
-
-Map<String, dynamic> _normalizeExperience(Map<String, dynamic> raw) {
-  int priceMad = 0;
-  if (raw['priceFromMad'] is num) {
-    priceMad = (raw['priceFromMad'] as num).round();
-  } else if (raw['priceMad'] is num) {
-    priceMad = (raw['priceMad'] as num).round();
-  } else if (raw['priceCents'] is num) {
-    priceMad = ((raw['priceCents'] as num) / 100).round();
-  }
-  return {
-    'id': raw['id'] ?? '',
-    'title': raw['title'] ?? 'Experience',
-    'city': raw['city'] ?? '',
-    'duration': raw['duration'] ?? '',
-    'priceFromMad': priceMad,
-    'verified': raw['verified'] == true,
-    'rating': raw['rating'] is num ? (raw['rating'] as num).toDouble() : null,
-    'image': raw['image'] as String?,
-  };
-}
 
 IconData _categoryIcon(String? key) {
   switch (key) {
@@ -48,47 +32,68 @@ IconData _categoryIcon(String? key) {
   }
 }
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  bool _isInitialLoading = true;
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _mockSplashDelayDone = false;
 
   @override
   void initState() {
     super.initState();
-    _runInitialLoading(fromInit: true);
+    if (!AppEnv.useRemoteCatalog) {
+      Future<void>.delayed(const Duration(milliseconds: 650), () {
+        if (!mounted) return;
+        setState(() => _mockSplashDelayDone = true);
+      });
+    } else {
+      _mockSplashDelayDone = true;
+    }
   }
 
-  void _runInitialLoading({bool fromInit = false}) {
-    if (!fromInit) {
-      setState(() => _isInitialLoading = true);
-    }
-    Future<void>.delayed(const Duration(milliseconds: 650), () {
-      if (!mounted) return;
-      setState(() => _isInitialLoading = false);
-    });
+  void _retryRemoteCatalog() {
+    ref.invalidate(marketplaceCatalogProvider);
+  }
+
+  List<Experience> _allHomeExperiences() {
+    final snap = ref.watch(marketplaceCatalogProvider).valueOrNull;
+    return snap?.items ?? [];
   }
 
   @override
   Widget build(BuildContext context) {
-    final featured = HomeFeedMock.featuredFallback().map(_normalizeExperience).toList();
+    final catalog = ref.watch(marketplaceCatalogProvider);
+    final mockWaiting = !AppEnv.useRemoteCatalog && !_mockSplashDelayDone;
+    final remoteWaiting = AppEnv.useRemoteCatalog && catalog.isLoading;
+    final featured = catalog.valueOrNull?.items.take(12).toList() ?? [];
     final hasContent = featured.isNotEmpty;
+
     return Scaffold(
       body: SafeArea(
-        child: Consumer(
-          builder: (context, ref, _) {
+        child: Builder(
+          builder: (context) {
             final savedIds = ref.watch(favoritesStoreProvider);
             final savedItems = _allHomeExperiences()
-                .where((item) => savedIds.contains(item['id']))
+                .where((e) => savedIds.contains(e.id))
                 .take(3)
                 .toList();
-            if (_isInitialLoading) {
+            if (mockWaiting || remoteWaiting) {
               return const _HomeLoadingView();
+            }
+            if (AppEnv.useRemoteCatalog && catalog.hasError) {
+              return _HomeStateCard(
+                title: 'Home is temporarily unavailable',
+                message:
+                    'We could not load the catalog. Check your connection and try again.',
+                primaryLabel: 'Retry',
+                onPrimary: _retryRemoteCatalog,
+                secondaryLabel: 'Browse Explore',
+                onSecondary: () => context.go('/app/explore'),
+              );
             }
             if (!hasContent) {
               return _HomeStateCard(
@@ -96,7 +101,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 message:
                     'We could not load recommendations right now. Please retry or explore manually.',
                 primaryLabel: 'Retry',
-                onPrimary: _runInitialLoading,
+                onPrimary: () {
+                  if (AppEnv.useRemoteCatalog) {
+                    _retryRemoteCatalog();
+                  } else {
+                    setState(() => _mockSplashDelayDone = false);
+                    Future<void>.delayed(const Duration(milliseconds: 650), () {
+                      if (!mounted) return;
+                      setState(() => _mockSplashDelayDone = true);
+                    });
+                  }
+                },
                 secondaryLabel: 'Browse Explore',
                 onSecondary: () => context.go('/app/explore'),
               );
@@ -223,15 +238,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemBuilder: (context, i) {
                     final e = featured[i];
                     return ExperienceCard(
-                      title: e['title'] as String,
-                      city: e['city'] as String,
-                      duration: e['duration'] as String,
-                      priceFromMad: e['priceFromMad'] as int,
-                      imageAsset: e['image'] as String?,
-                      verified: e['verified'] as bool,
-                      rating: e['rating'] as double?,
-                      onTap: () =>
-                          context.go('/app/home/experience/${e['id'] as String}'),
+                      title: e.title,
+                      city: e.city,
+                      duration: e.logistics.durationLabel,
+                      priceFromMad: e.price.fromMad,
+                      imageRef: e.media.primaryImageRef,
+                      verified: e.trust.verifiedOperator,
+                      rating: e.rating.average,
+                      onTap: () => context.go('/app/home/experience/${e.id}'),
                     );
                   },
                 ),
@@ -421,15 +435,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     itemBuilder: (context, i) {
                       final e = savedItems[i];
                       return ExperienceCard(
-                        title: e['title'] as String,
-                        city: e['city'] as String,
-                        duration: e['duration'] as String,
-                        priceFromMad: e['priceFromMad'] as int,
-                        imageAsset: e['image'] as String?,
-                        verified: e['verified'] as bool,
-                        rating: e['rating'] as double?,
-                        onTap: () =>
-                            context.go('/app/home/experience/${e['id'] as String}'),
+                        title: e.title,
+                        city: e.city,
+                        duration: e.logistics.durationLabel,
+                        priceFromMad: e.price.fromMad,
+                        imageRef: e.media.primaryImageRef,
+                        verified: e.trust.verifiedOperator,
+                        rating: e.rating.average,
+                        onTap: () => context.go('/app/home/experience/${e.id}'),
                       );
                     },
                   ),
@@ -453,24 +466,28 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 290,
                   child: Builder(
                     builder: (context) {
-                      final items = HomeFeedMock.curated(section);
+                      final snap = catalog.valueOrNull;
+                      final items = AppEnv.useRemoteCatalog
+                          ? experiencesForCuratedSection(snap?.items ?? [], section)
+                          : experiencesFromHomeCuratedMaps(
+                              HomeFeedMock.curated(section),
+                            );
                       return ListView.separated(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         scrollDirection: Axis.horizontal,
                         itemCount: items.length,
                         separatorBuilder: (_, __) => const SizedBox(width: 12),
                         itemBuilder: (context, i) {
-                          final e = _normalizeExperience(items[i]);
+                          final e = items[i];
                           return ExperienceCard(
-                            title: e['title'] as String,
-                            city: e['city'] as String,
-                            duration: e['duration'] as String,
-                            priceFromMad: e['priceFromMad'] as int,
-                            imageAsset: e['image'] as String?,
-                            verified: e['verified'] as bool,
-                            rating: e['rating'] as double?,
-                            onTap: () =>
-                                context.go('/app/home/experience/${e['id'] as String}'),
+                            title: e.title,
+                            city: e.city,
+                            duration: e.logistics.durationLabel,
+                            priceFromMad: e.price.fromMad,
+                            imageRef: e.media.primaryImageRef,
+                            verified: e.trust.verifiedOperator,
+                            rating: e.rating.average,
+                            onTap: () => context.go('/app/home/experience/${e.id}'),
                           );
                         },
                       );
@@ -481,8 +498,8 @@ class _HomeScreenState extends State<HomeScreen> {
               const SliverToBoxAdapter(child: SizedBox(height: 16)),
             ],
             const SliverToBoxAdapter(child: SizedBox(height: 32)),
-              ],
-            );
+          ],
+        );
           },
         ),
       ),
@@ -574,24 +591,6 @@ class _HomeStateCard extends StatelessWidget {
       ),
     );
   }
-}
-
-List<Map<String, dynamic>> _allHomeExperiences() {
-  final all = [
-    ...HomeFeedMock.featuredFallback(),
-    ...HomeFeedMock.curated('Best in Marrakech'),
-    ...HomeFeedMock.curated('Desert escapes'),
-    ...HomeFeedMock.curated('Authentic food'),
-  ];
-  final seen = <String>{};
-  final result = <Map<String, dynamic>>[];
-  for (final raw in all) {
-    final id = raw['id'] as String? ?? '';
-    if (id.isEmpty || seen.contains(id)) continue;
-    seen.add(id);
-    result.add(_normalizeExperience(raw));
-  }
-  return result;
 }
 
 class _HeroMediaCard extends StatelessWidget {

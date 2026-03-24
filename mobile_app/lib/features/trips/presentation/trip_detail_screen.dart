@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config/app_env.dart';
+import '../../../core/widgets/catalog_image.dart';
+import '../state/trip_remote_providers.dart';
 import '../state/trips_store.dart';
+
+bool _tripHasNote(String? s) => s != null && s.trim().isNotEmpty;
 
 class TripDetailScreen extends ConsumerWidget {
   const TripDetailScreen({super.key, required this.bookingId});
@@ -11,10 +16,25 @@ class TripDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (AppEnv.useRemoteTrips) {
+      final asyncTrip = ref.watch(tripRemoteDetailProvider(bookingId));
+      return asyncTrip.when(
+        loading: () => Scaffold(
+          appBar: AppBar(title: const Text('Trip')),
+          body: const Center(child: CircularProgressIndicator()),
+        ),
+        error: (_, __) => _TripDetailStateScaffold(
+          title: 'This booking is unavailable',
+          message: 'The booking reference is invalid or no longer available.',
+          primaryLabel: 'Back to Trips',
+          onPrimary: () => context.go('/app/trips'),
+        ),
+        data: (trip) => _TripDetailLoadedView(trip: trip),
+      );
+    }
+
     final stored = ref.watch(tripsStoreProvider);
-    // Match TripsScreen: fall back to seed data when the store is empty.
-    final trips =
-        stored.isEmpty ? TripsStore.seedTrips : stored;
+    final trips = stored.isEmpty ? TripsStore.seedTrips : stored;
     final matched = trips.cast<Map<String, dynamic>>().where(
       (t) => (t['bookingId'] as String?) == bookingId,
     );
@@ -26,15 +46,24 @@ class TripDetailScreen extends ConsumerWidget {
         onPrimary: () => context.go('/app/trips'),
       );
     }
-    final trip = matched.first;
+    return _TripDetailLoadedView(trip: matched.first);
+  }
+}
 
+class _TripDetailLoadedView extends StatelessWidget {
+  const _TripDetailLoadedView({required this.trip});
+
+  final Map<String, dynamic> trip;
+
+  @override
+  Widget build(BuildContext context) {
     final status = trip['status'] as String? ?? 'Confirmed';
     final paymentStatus = trip['paymentStatus'] as String? ?? 'Unknown';
     final startAt = DateTime.tryParse(trip['startAt'] as String? ?? '');
     final dateLabel = startAt != null
         ? '${startAt.day}/${startAt.month}/${startAt.year}'
         : (trip['dateLabel'] as String? ?? 'Date TBD');
-    final friendlyDate = _friendlyDateLabel(startAt);
+    final friendlyDate = _tripFriendlyDateLabel(startAt);
     final timeLabel = trip['timeLabel'] as String? ?? 'Time TBD';
     final isPending = status.toLowerCase() == 'pending';
     final isDepositPaid = paymentStatus.toLowerCase().contains('deposit');
@@ -78,13 +107,11 @@ class TripDetailScreen extends ConsumerWidget {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.asset(
-                    trip['heroImage'] as String? ?? '',
+                  CatalogImage(
+                    ref: trip['heroImage'] as String?,
                     fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    ),
+                    errorColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   ),
                   DecoratedBox(
                     decoration: BoxDecoration(
@@ -126,7 +153,10 @@ class TripDetailScreen extends ConsumerWidget {
                     children: [
                       _Pill(text: status, icon: Icons.verified_rounded),
                       _Pill(text: paymentStatus, icon: Icons.payments_rounded),
-                      _Pill(text: '${trip['travelers']} traveler(s)', icon: Icons.group_rounded),
+                      _Pill(
+                        text: '${trip['travelers']} traveler(s)',
+                        icon: Icons.group_rounded,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -153,6 +183,8 @@ class TripDetailScreen extends ConsumerWidget {
                     title: 'Meeting and logistics',
                     rows: [
                       ['Meeting point', '${trip['meetingPoint']}'],
+                      if (_tripHasNote(trip['meetingNote'] as String?))
+                        ['Operator note', '${trip['meetingNote']}'],
                       ['Arrival', 'Be there 15 minutes before start'],
                       ['Type', '${trip['bookingType']} • $dayOneHint'],
                       ['Details', logisticsHint],
@@ -169,13 +201,13 @@ class TripDetailScreen extends ConsumerWidget {
                   _DocTile(
                     title: 'Voucher',
                     subtitle: 'Booking QR and check-in instructions',
-                    onTap: () => _showDoc(context, 'Voucher', trip),
+                    onTap: () => _showTripDoc(context, 'Voucher', trip),
                   ),
                   const SizedBox(height: 8),
                   _DocTile(
                     title: 'Receipt',
                     subtitle: 'Payment and booking status summary',
-                    onTap: () => _showDoc(context, 'Receipt', trip),
+                    onTap: () => _showTripDoc(context, 'Receipt', trip),
                   ),
                   const SizedBox(height: 12),
                   Container(
@@ -206,40 +238,44 @@ class TripDetailScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  String _friendlyDateLabel(DateTime? startAt) {
-    if (startAt == null) return 'Date soon';
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final target = DateTime(startAt.year, startAt.month, startAt.day);
-    final diffDays = target.difference(today).inDays;
-    if (diffDays == 0) return 'Today';
-    if (diffDays == 1) return 'Tomorrow';
-    if (diffDays > 1 && diffDays <= 6) return 'In $diffDays days';
-    if (diffDays >= 0 && target.weekday >= DateTime.friday) return 'This weekend';
-    return '${startAt.day}/${startAt.month}/${startAt.year}';
-  }
+String _tripFriendlyDateLabel(DateTime? startAt) {
+  if (startAt == null) return 'Date soon';
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final target = DateTime(startAt.year, startAt.month, startAt.day);
+  final diffDays = target.difference(today).inDays;
+  if (diffDays == 0) return 'Today';
+  if (diffDays == 1) return 'Tomorrow';
+  if (diffDays > 1 && diffDays <= 6) return 'In $diffDays days';
+  if (diffDays >= 0 && target.weekday >= DateTime.friday) return 'This weekend';
+  return '${startAt.day}/${startAt.month}/${startAt.year}';
+}
 
-  void _showDoc(BuildContext context, String docType, Map<String, dynamic> trip) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(docType),
-        content: Text(
-          '$docType for ${trip['title']}\n'
-          'Booking ID: ${trip['bookingId']}\n'
-          'Status: ${trip['status']}\n'
-          'Payment: ${trip['paymentStatus']}',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
+void _showTripDoc(
+  BuildContext context,
+  String docType,
+  Map<String, dynamic> trip,
+) {
+  showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(docType),
+      content: Text(
+        '$docType for ${trip['title']}\n'
+        'Booking ID: ${trip['bookingId']}\n'
+        'Status: ${trip['status']}\n'
+        'Payment: ${trip['paymentStatus']}',
       ),
-    );
-  }
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+      ],
+    ),
+  );
 }
 
 class _TripDetailStateScaffold extends StatelessWidget {

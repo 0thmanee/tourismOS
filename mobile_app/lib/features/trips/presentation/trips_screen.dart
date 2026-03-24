@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config/app_env.dart';
+import '../../../core/widgets/catalog_image.dart';
+import '../data/trip_dto_mapper.dart';
+import '../state/bookings_providers.dart';
+import '../state/trips_phone_provider.dart';
 import '../state/trips_store.dart';
 
 enum _TripsFilter { all, upcoming, pending, past }
@@ -16,27 +21,61 @@ class TripsScreen extends ConsumerStatefulWidget {
 class _TripsScreenState extends ConsumerState<TripsScreen> {
   _TripsFilter _filter = _TripsFilter.all;
   bool _isInitialLoading = true;
+  bool _remoteTripsFailed = false;
 
   @override
   void initState() {
     super.initState();
-    Future<void>.delayed(const Duration(milliseconds: 650), () {
-      if (!mounted) return;
-      setState(() => _isInitialLoading = false);
-    });
+    if (AppEnv.useRemoteTrips) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadRemoteTrips();
+      });
+    } else {
+      Future<void>.delayed(const Duration(milliseconds: 650), () {
+        if (!mounted) return;
+        setState(() => _isInitialLoading = false);
+      });
+    }
+  }
+
+  Future<void> _loadRemoteTrips() async {
+    if (mounted) setState(() => _remoteTripsFailed = false);
+    try {
+      final phone = resolveB2cTripsPhoneFromSaved(
+        ref.read(b2cTravelerPhoneProvider),
+      );
+      final raw = await ref.read(bookingsApiProvider).listTrips(phone: phone);
+      final mapped = raw.map(tripItemFromTripDto).toList();
+      ref.read(tripsStoreProvider.notifier).replaceAll(mapped);
+    } catch (_) {
+      if (mounted) setState(() => _remoteTripsFailed = true);
+    } finally {
+      if (mounted) {
+        setState(() => _isInitialLoading = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final ref = this.ref;
+    final usingRemote = AppEnv.useRemoteTrips;
     final storedTrips = ref.watch(tripsStoreProvider);
-    final trips = storedTrips.isEmpty ? TripsStore.seedTrips : storedTrips;
-    final showingDemo = storedTrips.isEmpty;
+    final trips = usingRemote
+        ? storedTrips
+        : (storedTrips.isEmpty ? TripsStore.seedTrips : storedTrips);
+    final showingDemo = !usingRemote && storedTrips.isEmpty;
     final now = DateTime.now();
     final upcoming = trips.where((t) {
       final date = DateTime.tryParse(t['startAt'] as String? ?? '');
       return date != null && (date.isAfter(now) || date.isAtSameMomentAs(now));
-    }).toList();
+    }).toList()
+      ..sort((a, b) {
+        final da = DateTime.tryParse(a['startAt'] as String? ?? '');
+        final db = DateTime.tryParse(b['startAt'] as String? ?? '');
+        if (da == null || db == null) return 0;
+        return da.compareTo(db);
+      });
     final past = trips.where((t) {
       final date = DateTime.tryParse(t['startAt'] as String? ?? '');
       return date != null && date.isBefore(now);
@@ -68,6 +107,34 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
                     fontWeight: FontWeight.w600,
                   ),
             ),
+            if (usingRemote && _remoteTripsFailed) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Theme.of(context).colorScheme.errorContainer,
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.cloud_off_rounded,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.onErrorContainer),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Could not load trips. Showing offline data if available.',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onErrorContainer,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (showingDemo) ...[
               const SizedBox(height: 8),
               Container(
@@ -284,8 +351,16 @@ class _TripCard extends StatelessWidget {
 
   final Map<String, dynamic> item;
 
+  static String? _bookingIdString(dynamic v) {
+    if (v == null) return null;
+    if (v is String) return v.isEmpty ? null : v;
+    final s = v.toString();
+    return s.isEmpty ? null : s;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bookingId = _bookingIdString(item['bookingId']);
     final status = item['status'] as String? ?? 'Confirmed';
     final paymentStatus = item['paymentStatus'] as String? ?? 'Unknown';
     final date = DateTime.tryParse(item['startAt'] as String? ?? '');
@@ -301,7 +376,9 @@ class _TripCard extends StatelessWidget {
 
     return InkWell(
       borderRadius: BorderRadius.circular(16),
-      onTap: () => context.go('/app/trips/detail/${item['bookingId']}'),
+      onTap: bookingId != null
+          ? () => context.go('/app/trips/detail/$bookingId')
+          : null,
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
@@ -316,12 +393,10 @@ class _TripCard extends StatelessWidget {
                 SizedBox(
                   width: 112,
                   height: 120,
-                  child: Image.asset(
-                    item['heroImage'] as String? ?? '',
+                  child: CatalogImage(
+                    ref: item['heroImage'] as String?,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                    ),
+                    errorColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                   ),
                 ),
                 Positioned(
@@ -522,12 +597,10 @@ class _NextTripHero extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.asset(
-              item['heroImage'] as String? ?? '',
+            CatalogImage(
+              ref: item['heroImage'] as String?,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              ),
+              errorColor: Theme.of(context).colorScheme.surfaceContainerHighest,
             ),
             Container(color: Colors.black.withValues(alpha: 0.22)),
             DecoratedBox(

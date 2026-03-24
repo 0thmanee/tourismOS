@@ -2,22 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config/app_env.dart';
 import '../../../core/data/app_mock_data.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/catalog_image.dart';
+import '../../experiences/domain/experience.dart';
+import '../../experiences/state/catalog_providers.dart';
 import '../../favorites/state/favorites_store.dart';
-import '../../home/data/home_feed_mock.dart';
 
 enum _ExploreSort { recommended, priceLow, ratingHigh }
 enum _PriceRange { any, under300, between300600, between6001000, over1000 }
 
-class ExploreScreen extends StatefulWidget {
+class ExploreScreen extends ConsumerStatefulWidget {
   const ExploreScreen({super.key});
 
   @override
-  State<ExploreScreen> createState() => _ExploreScreenState();
+  ConsumerState<ExploreScreen> createState() => _ExploreScreenState();
 }
 
-class _ExploreScreenState extends State<ExploreScreen> {
+class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
   final Set<String> _activeCategories = {};
   String _activeCity = 'All';
@@ -27,11 +30,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   void initState() {
     super.initState();
-    // Lightweight simulated loading so the skeleton state is visible.
-    Future<void>.delayed(const Duration(milliseconds: 700), () {
-      if (!mounted) return;
-      setState(() => _isInitialLoading = false);
-    });
+    if (!AppEnv.useRemoteCatalog) {
+      Future<void>.delayed(const Duration(milliseconds: 700), () {
+        if (!mounted) return;
+        setState(() => _isInitialLoading = false);
+      });
+    } else {
+      _isInitialLoading = false;
+    }
   }
 
   @override
@@ -42,17 +48,29 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer(
-      builder: (context, ref, _) {
-        final all = _buildExploreItems();
-        final filtered = _applyFilters(all);
-        final savedIds = ref.watch(favoritesStoreProvider);
-        final cities = <String>{
-          'All',
-          ...all.map((e) => e['city'] as String).where((c) => c.trim().isNotEmpty),
-        }.toList();
+    final catalog = ref.watch(marketplaceCatalogProvider);
+    final all = catalog.maybeWhen(
+      data: (s) => s.items,
+      orElse: () => <Experience>[],
+    );
+    final filtered = _applyFilters(all);
+    final savedIds = ref.watch(favoritesStoreProvider);
+    final catalogSnap = catalog.valueOrNull;
+    final cities = <String>{
+      'All',
+      ...?catalogSnap?.availableCities,
+      ...all.map((e) => e.city).where((c) => c.trim().isNotEmpty),
+    }.toList()
+      ..sort((a, b) {
+        if (a == 'All') return -1;
+        if (b == 'All') return 1;
+        return a.compareTo(b);
+      });
 
-        return Scaffold(
+    final remoteLoading = AppEnv.useRemoteCatalog && catalog.isLoading;
+    final showSkeleton = remoteLoading || (!AppEnv.useRemoteCatalog && _isInitialLoading);
+
+    return Scaffold(
           appBar: AppBar(
             title: const Text('Explore'),
             actions: [
@@ -208,7 +226,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                             selected: _activeCategories.isEmpty
                                                 ? 'All'
                                                 : _activeCategories.first,
-                                            options: const ['All', ...AppMockData.exploreFilterCategories],
+                                            options: <String>{
+                                              'All',
+                                              ...AppMockData.exploreFilterCategories,
+                                              ...?catalogSnap?.availableCategories,
+                                              ...all.map((e) => e.category),
+                                            }.toList()
+                                              ..sort((a, b) {
+                                                if (a == 'All') return -1;
+                                                if (b == 'All') return 1;
+                                                return a.compareTo(b);
+                                              }),
                                             labelBuilder: (value) => value,
                                           ),
                                         );
@@ -366,7 +394,37 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     ),
                   ),
                 ),
-                if (_isInitialLoading)
+                if (AppEnv.useRemoteCatalog && catalog.hasError)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: Material(
+                        color: Theme.of(context).colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Could not refresh the catalog.',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () =>
+                                    ref.invalidate(marketplaceCatalogProvider),
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (showSkeleton)
                   const SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(16, 6, 16, 0),
@@ -451,12 +509,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       ),
                     ),
                   ),
-                if (!_isInitialLoading)
+                if (!showSkeleton)
                   SliverList.separated(
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final item = filtered[index];
-                    final isSaved = savedIds.contains(item['id']);
+                    final isSaved = savedIds.contains(item.id);
                     return Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                       child: _ExploreResultCard(
@@ -465,7 +523,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         onToggleSaved: () {
                           ref
                               .read(favoritesStoreProvider.notifier)
-                              .toggle(item['id'] as String);
+                              .toggle(item.id);
                           ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -486,49 +544,19 @@ class _ExploreScreenState extends State<ExploreScreen> {
             ),
           ),
         );
-      },
-    );
   }
 
-  List<Map<String, dynamic>> _buildExploreItems() {
-    final all = [
-      ...HomeFeedMock.featuredFallback(),
-      ...HomeFeedMock.curated('Best in Marrakech'),
-      ...HomeFeedMock.curated('Desert escapes'),
-      ...HomeFeedMock.curated('Authentic food'),
-    ];
-
-    final seen = <String>{};
-    final result = <Map<String, dynamic>>[];
-    for (final raw in all) {
-      final id = raw['id'] as String? ?? '';
-      if (id.isEmpty || seen.contains(id)) continue;
-      seen.add(id);
-      result.add({
-        'id': id,
-        'title': raw['title'] as String? ?? 'Experience',
-        'city': raw['city'] as String? ?? '',
-        'duration': raw['duration'] as String? ?? '',
-        'priceFromMad': (raw['priceFromMad'] as num?)?.round() ?? 0,
-        'rating': (raw['rating'] as num?)?.toDouble() ?? 4.6,
-        'verified': raw['verified'] == true,
-        'image': raw['image'] as String?,
-        'category': AppMockData.exploreCategoryByExperienceId[id] ?? 'Culture',
-      });
-    }
-    return result;
-  }
-
-  List<Map<String, dynamic>> _applyFilters(List<Map<String, dynamic>> list) {
+  List<Experience> _applyFilters(List<Experience> list) {
     final query = _searchCtrl.text.trim().toLowerCase();
     final filtered = list.where((item) {
-      final city = (item['city'] as String).toLowerCase();
-      final title = (item['title'] as String).toLowerCase();
-      final category = item['category'] as String;
-      final queryPass = query.isEmpty || title.contains(query) || city.contains(query);
-      final cityPass = _activeCity == 'All' || (item['city'] as String) == _activeCity;
+      final city = item.city.toLowerCase();
+      final title = item.title.toLowerCase();
+      final category = item.category;
+      final queryPass =
+          query.isEmpty || title.contains(query) || city.contains(query) || category.toLowerCase().contains(query);
+      final cityPass = _activeCity == 'All' || item.city == _activeCity;
       final categoryPass = _activeCategories.isEmpty || _activeCategories.contains(category);
-      final price = item['priceFromMad'] as int;
+      final price = item.price.fromMad;
       final pricePass = switch (_priceRange) {
         _PriceRange.any => true,
         _PriceRange.under300 => price < 300,
@@ -541,13 +569,19 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
     switch (_sort) {
       case _ExploreSort.priceLow:
-        filtered.sort((a, b) => (a['priceFromMad'] as int).compareTo(b['priceFromMad'] as int));
+        filtered.sort((a, b) => a.price.fromMad.compareTo(b.price.fromMad));
       case _ExploreSort.ratingHigh:
-        filtered.sort((a, b) => (b['rating'] as double).compareTo(a['rating'] as double));
+        filtered.sort((a, b) {
+          final ra = a.rating.average ?? 0;
+          final rb = b.rating.average ?? 0;
+          return rb.compareTo(ra);
+        });
       case _ExploreSort.recommended:
         filtered.sort((a, b) {
-          final av = (a['verified'] == true ? 1 : 0) + ((a['rating'] as double) * 10).round();
-          final bv = (b['verified'] == true ? 1 : 0) + ((b['rating'] as double) * 10).round();
+          final av = (a.trust.verifiedOperator ? 1 : 0) +
+              ((a.rating.average ?? 4.2) * 10).round();
+          final bv = (b.trust.verifiedOperator ? 1 : 0) +
+              ((b.rating.average ?? 4.2) * 10).round();
           return bv.compareTo(av);
         });
     }
@@ -754,17 +788,17 @@ class _ExploreResultCard extends StatelessWidget {
     required this.onToggleSaved,
   });
 
-  final Map<String, dynamic> item;
+  final Experience item;
   final bool isSaved;
   final VoidCallback onToggleSaved;
 
   @override
   Widget build(BuildContext context) {
-    final verified = item['verified'] == true;
-    final rating = item['rating'] as double? ?? 4.6;
+    final verified = item.trust.verifiedOperator;
+    final ratingLabel = item.rating.average ?? 4.6;
     return InkWell(
       borderRadius: BorderRadius.circular(16),
-      onTap: () => context.go('/app/home/experience/${item['id']}'),
+      onTap: () => context.go('/app/home/experience/${item.id}'),
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
@@ -785,12 +819,11 @@ class _ExploreResultCard extends StatelessWidget {
               children: [
                 AspectRatio(
                   aspectRatio: 16 / 9,
-                  child: Image.asset(
-                    item['image'] as String? ?? '',
+                  child: CatalogImage(
+                    ref: item.media.primaryImageRef,
                     fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
-                    errorBuilder: (_, __, ___) =>
-                        Container(color: Theme.of(context).colorScheme.surfaceContainerHigh),
+                    errorColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                   ),
                 ),
                 Positioned(
@@ -803,7 +836,7 @@ class _ExploreResultCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      item['category'] as String,
+                      item.category,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
@@ -865,7 +898,7 @@ class _ExploreResultCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item['title'] as String,
+                    item.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -874,7 +907,7 @@ class _ExploreResultCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${item['city']} • ${item['duration']}',
+                    '${item.city} • ${item.logistics.durationLabel}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -900,14 +933,14 @@ class _ExploreResultCard extends StatelessWidget {
                       Icon(Icons.star_rounded, color: AppTokens.brandAccent, size: 18),
                       const SizedBox(width: 3),
                       Text(
-                        rating.toStringAsFixed(1),
+                        ratingLabel.toStringAsFixed(1),
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
                               fontWeight: FontWeight.w800,
                             ),
                       ),
                       const Spacer(),
                       Text(
-                        'From ${item['priceFromMad']} MAD',
+                        'From ${item.price.fromMad} MAD',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w900,
                             ),
