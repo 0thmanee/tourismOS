@@ -147,6 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 HomeFeedMock.quickActions[0]['subtitle'] as String,
                             imageAsset:
                                 HomeFeedMock.quickActions[0]['image'] as String,
+                            onTap: () => context.go('/app/explore'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -157,6 +158,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 HomeFeedMock.quickActions[1]['subtitle'] as String,
                             imageAsset:
                                 HomeFeedMock.quickActions[1]['image'] as String,
+                            onTap: () => context.go(
+                              '/app/home/experience/agafay-quad',
+                            ),
                           ),
                         ),
                       ],
@@ -726,16 +730,18 @@ class _QuickActionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.imageAsset,
+    required this.onTap,
   });
 
   final String title;
   final String subtitle;
   final String imageAsset;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {},
+      onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         height: 140,

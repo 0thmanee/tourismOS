@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/data/app_mock_data.dart';
+import '../../../core/utils/try_launch_url.dart';
 
 class SupportScreen extends StatelessWidget {
   const SupportScreen({super.key});
@@ -23,21 +25,40 @@ class SupportScreen extends StatelessWidget {
             icon: Icons.help_center_rounded,
             title: 'Help center',
             subtitle: 'Booking, cancellation, payments, and account FAQs',
+            onTap: () => context.go('/app/explore'),
           ),
           _HelpCard(
             icon: Icons.support_agent_rounded,
             title: 'Contact support',
             subtitle: 'Live chat placeholder (coming next)',
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Live chat — coming soon')),
+              );
+            },
           ),
           _HelpCard(
             icon: Icons.mail_outline_rounded,
             title: 'Email us',
             subtitle: AppMockData.supportEmail,
+            onTap: () => tryLaunchUrl(
+              context,
+              Uri.parse('mailto:${AppMockData.supportEmail}'),
+            ),
           ),
           _HelpCard(
             icon: Icons.call_outlined,
             title: 'Call support',
             subtitle: AppMockData.supportPhonePlaceholder,
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Phone support uses a placeholder number in this demo.',
+                  ),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 16),
           Container(
@@ -64,46 +85,62 @@ class _HelpCard extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          Icon(icon),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
+            child: Row(
               children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                Icon(icon),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                       ),
-                ),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      Text(
+                        subtitle,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
                       ),
+                    ],
+                  ),
                 ),
+                const Icon(Icons.chevron_right_rounded),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right_rounded),
-        ],
+        ),
       ),
     );
   }

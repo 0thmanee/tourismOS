@@ -51,6 +51,18 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
             expandedHeight: 320,
             pinned: true,
             stretch: true,
+            foregroundColor: Colors.white,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              tooltip: 'Back',
+              onPressed: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/app/home');
+                }
+              },
+            ),
             actions: [
               IconButton(
                 onPressed: () =>
@@ -294,7 +306,14 @@ class _DetailStateScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Experience')),
+      appBar: AppBar(
+        title: const Text('Experience'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Back',
+          onPressed: onPrimary,
+        ),
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(20),

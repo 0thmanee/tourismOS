@@ -13,6 +13,8 @@ class AppTheme {
       onError: AppTokens.textInverse,
       surface: AppTokens.appSurface,
       onSurface: AppTokens.text1,
+      outline: AppTokens.appBorder,
+      outlineVariant: AppTokens.appBorder,
     );
     // Local bundled fonts:
     // - Display/headlines: Cinzel

@@ -11,15 +11,10 @@ class TripDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final trips = ref.watch(tripsStoreProvider);
-    if (trips.isEmpty) {
-      return _TripDetailStateScaffold(
-        title: 'Trip not found',
-        message: 'We could not load this trip yet. Return to Trips and try again.',
-        primaryLabel: 'Back to Trips',
-        onPrimary: () => context.go('/app/trips'),
-      );
-    }
+    final stored = ref.watch(tripsStoreProvider);
+    // Match TripsScreen: fall back to seed data when the store is empty.
+    final trips =
+        stored.isEmpty ? TripsStore.seedTrips : stored;
     final matched = trips.cast<Map<String, dynamic>>().where(
       (t) => (t['bookingId'] as String?) == bookingId,
     );
@@ -67,6 +62,18 @@ class TripDetailScreen extends ConsumerWidget {
           SliverAppBar(
             expandedHeight: 280,
             pinned: true,
+            foregroundColor: Colors.white,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              tooltip: 'Back',
+              onPressed: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/app/trips');
+                }
+              },
+            ),
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -251,7 +258,14 @@ class _TripDetailStateScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Trip detail')),
+      appBar: AppBar(
+        title: const Text('Trip detail'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Back',
+          onPressed: onPrimary,
+        ),
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(20),

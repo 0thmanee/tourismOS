@@ -140,7 +140,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24),
                         child: Text(
-                          'Morocco Experiences',
+                          AppMockData.appBrandName,
                           textAlign: TextAlign.center,
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontSize: 40,
