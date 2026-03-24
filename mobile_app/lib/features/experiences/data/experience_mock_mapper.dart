@@ -5,15 +5,22 @@ import '../domain/experience.dart';
 /// Builds an [Experience] from Explore / Home list rows (mock shape).
 Experience experienceFromExploreRow(Map<String, dynamic> row, {String? categoryOverride}) {
   final id = row['id'] as String? ?? '';
+  final orgId = AppMockData.organizationIdByExperienceId[id] ?? '';
   final category =
       categoryOverride ??
       AppMockData.exploreCategoryByExperienceId[id] ??
       'Experiences';
+  final imageRef = row['image'] as String? ?? '';
   return Experience(
     id: id,
     slug: id,
-    organizationId: '',
-    operatorName: 'Local operator',
+    organizationId: orgId,
+    operatorName: orgId.isNotEmpty
+        ? (AppMockData.operatorNameByOrgId[orgId] ?? 'Local operator')
+        : 'Local operator',
+    operatorLogoUrl: imageRef,
+    operatorBio:
+        orgId.isNotEmpty ? AppMockData.operatorBioByOrgId[orgId] : null,
     title: row['title'] as String? ?? 'Experience',
     summary: row['title'] as String? ?? '',
     city: row['city'] as String? ?? '',
@@ -31,9 +38,9 @@ Experience experienceFromExploreRow(Map<String, dynamic> row, {String? categoryO
       reviewsCount: null,
     ),
     media: ExperienceMedia(
-      heroImage: row['image'] as String? ?? '',
+      heroImage: imageRef,
       gallery: [
-        if ((row['image'] as String?) != null) row['image'] as String,
+        if (imageRef.isNotEmpty) imageRef,
       ],
     ),
     logistics: ExperienceLogistics(
@@ -73,11 +80,21 @@ Experience experienceFromDetailMock(Map<String, dynamic> m) {
   final langStr = m['languages'] as String? ?? 'EN';
   final languages = langStr.split('/').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
 
+  final orgId = AppMockData.organizationIdByExperienceId[id] ?? '';
+  final opName = orgId.isNotEmpty
+      ? (AppMockData.operatorNameByOrgId[orgId] ??
+          (m['trustBadge'] as String?) ??
+          'Local operator')
+      : (m['trustBadge'] as String? ?? 'Local operator');
   return Experience(
     id: id,
     slug: id,
-    organizationId: '',
-    operatorName: m['trustBadge'] as String? ?? 'Local operator',
+    organizationId: orgId,
+    operatorName: opName,
+    operatorLogoUrl: hero,
+    operatorBio: orgId.isNotEmpty
+        ? AppMockData.operatorBioByOrgId[orgId]
+        : null,
     title: m['title'] as String? ?? 'Experience',
     summary: m['summary'] as String? ?? '',
     city: m['city'] as String? ?? '',

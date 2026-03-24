@@ -16,6 +16,14 @@ export function resolveOperatorName(org: OrgForExperience): string {
 	return bn && bn.length > 0 ? bn : org.name;
 }
 
+export function resolveOperatorBio(org: OrgForExperience): string | null {
+	const m = org.metadata as Record<string, unknown> | null;
+	if (m && typeof m.operatorBio === "string" && m.operatorBio.trim())
+		return m.operatorBio.trim();
+	if (m && typeof m.bio === "string" && m.bio.trim()) return m.bio.trim();
+	return null;
+}
+
 export function resolveExperienceCity(org: OrgForExperience): string {
 	const m = org.metadata as Record<string, unknown> | null;
 	if (m && typeof m.marketCity === "string" && m.marketCity.trim())

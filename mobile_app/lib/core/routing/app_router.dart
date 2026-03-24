@@ -7,6 +7,7 @@ import '../../features/auth/presentation/email_auth_screen.dart';
 import '../../features/auth/presentation/email_signup_screen.dart';
 import '../../features/booking_flow/presentation/booking_flow_screen.dart';
 import '../../features/experience_detail/presentation/experience_detail_screen.dart';
+import '../../features/provider_profile/presentation/provider_profile_screen.dart';
 import '../../features/explore/presentation/explore_screen.dart';
 import '../../features/favorites/presentation/favorites_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
@@ -88,6 +89,14 @@ GoRouter createAppRouter(LaunchController launch) {
                         ),
                       ),
                     ],
+                  ),
+                  GoRoute(
+                    path: 'provider/:organizationId',
+                    name: 'provider-profile',
+                    builder: (context, state) => ProviderProfileScreen(
+                      organizationId:
+                          state.pathParameters['organizationId'] ?? '',
+                    ),
                   ),
                 ],
               ),

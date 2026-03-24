@@ -109,6 +109,8 @@ class Experience {
     required this.slug,
     required this.organizationId,
     required this.operatorName,
+    this.operatorLogoUrl = '',
+    this.operatorBio,
     required this.title,
     required this.summary,
     required this.city,
@@ -128,6 +130,10 @@ class Experience {
   final String slug;
   final String organizationId;
   final String operatorName;
+  /// Host logo / avatar ref (URL or asset path); may match hero when API uses org logo.
+  final String operatorLogoUrl;
+  /// Short operator story when API or mock supplies it.
+  final String? operatorBio;
   final String title;
   final String summary;
   final String city;

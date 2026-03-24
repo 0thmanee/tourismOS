@@ -8,6 +8,10 @@ export type ExperienceDTO = {
 	slug: string;
 	organizationId: string;
 	operatorName: string;
+	/** Organization logo URL (same source as listing branding; explicit for host UI). */
+	operatorLogoUrl: string;
+	/** Short operator story when present in org metadata. */
+	operatorBio: string | null;
 
 	title: string;
 	summary: string;

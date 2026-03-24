@@ -66,6 +66,8 @@ Experience experienceFromApiDto(Map<String, dynamic> json) {
     slug: json['slug'] as String? ?? '',
     organizationId: json['organizationId'] as String? ?? '',
     operatorName: json['operatorName'] as String? ?? '',
+    operatorLogoUrl: json['operatorLogoUrl'] as String? ?? '',
+    operatorBio: json['operatorBio'] as String?,
     title: json['title'] as String? ?? 'Experience',
     summary: json['summary'] as String? ?? '',
     city: json['city'] as String? ?? '',

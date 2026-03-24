@@ -12,6 +12,7 @@ import {
 	resolveExperienceCity,
 	resolveMeetingNote,
 	resolveMeetingPoint,
+	resolveOperatorBio,
 	resolveOperatorName,
 } from "./experience-fields";
 import { buildExperienceSlug } from "./experience-slug";
@@ -125,11 +126,15 @@ export function toExperienceDTO(
 
 	const gallery = parseMetadataStringArray(org.metadata, "gallery");
 
+	const logo = org.logo ?? "";
+
 	return {
 		id: activity.id,
 		slug: buildExperienceSlug(activity.name, activity.id),
 		organizationId: org.id,
 		operatorName: resolveOperatorName(org),
+		operatorLogoUrl: logo,
+		operatorBio: resolveOperatorBio(org),
 		title: activity.name,
 		summary: resolveSummary(org, activity.name, kind),
 		city,
@@ -147,7 +152,7 @@ export function toExperienceDTO(
 			reviewsCount: null,
 		},
 		media: {
-			heroImage: org.logo ?? "",
+			heroImage: logo,
 			gallery: gallery.length > 0 ? gallery : [],
 		},
 		logistics: {

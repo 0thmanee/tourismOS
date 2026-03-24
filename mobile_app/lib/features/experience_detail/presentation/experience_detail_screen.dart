@@ -219,6 +219,8 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
                     ],
                   ),
                   const SizedBox(height: 18),
+                  _HostedBySection(detail: detail),
+                  const SizedBox(height: 12),
                   _SectionCard(
                     title: 'Highlights',
                     child: Column(
@@ -368,6 +370,130 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _HostedBySection extends StatelessWidget {
+  const _HostedBySection({required this.detail});
+
+  final Experience detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final logoRef = detail.operatorLogoUrl.trim().isNotEmpty
+        ? detail.operatorLogoUrl
+        : detail.media.primaryImageRef;
+    final cityLine = detail.city.trim().isEmpty
+        ? 'Local operator'
+        : 'Local operator in ${detail.city}';
+    final canProfile = detail.organizationId.trim().isNotEmpty;
+    final verified = detail.trust.verifiedOperator;
+
+    return _SectionCard(
+      title: 'Hosted by',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _HostedByAvatar(ref: logoRef, name: detail.operatorName),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      detail.operatorName,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      cityLine,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    if (verified) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.verified_rounded,
+                            size: 18,
+                            color: AppTokens.forestMid,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Verified operator',
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                  color: AppTokens.forestMid,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (canProfile) ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => context.push(
+                  '/app/home/provider/${detail.organizationId}',
+                ),
+                child: const Text('View profile'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _HostedByAvatar extends StatelessWidget {
+  const _HostedByAvatar({required this.ref, required this.name});
+
+  final String ref;
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmed = name.trim();
+    final initial = trimmed.isNotEmpty ? trimmed[0].toUpperCase() : '?';
+    return ClipOval(
+      child: ref.trim().isEmpty
+          ? CircleAvatar(
+              radius: 28,
+              backgroundColor:
+                  Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: Text(
+                initial,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+            )
+          : SizedBox(
+              width: 56,
+              height: 56,
+              child: CatalogImage(
+                ref: ref,
+                fit: BoxFit.cover,
+                errorColor:
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
+              ),
+            ),
     );
   }
 }

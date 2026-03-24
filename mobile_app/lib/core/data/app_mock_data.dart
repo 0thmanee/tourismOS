@@ -16,6 +16,43 @@ class AppMockData {
     'Nature',
   ];
 
+  /// Stable org ids for mock catalog (provider profile groups).
+  static const organizationIdByExperienceId = <String, String>{
+    'agafay-quad': 'org-atlas-motion',
+    'atlas-hike': 'org-atlas-motion',
+    'medina-food-stories': 'org-medina-stories',
+    'marrakech-rooftop-dinner': 'org-medina-stories',
+    'agafay-camp-evening': 'org-desert-lines',
+    'merzouga-camel-ride': 'org-desert-lines',
+    'taghazout-surf': 'org-ocean-roots',
+    'fes-cooking-class': 'org-fes-riad',
+    'essaouira-ocean-grill': 'org-essaouira-grill',
+  };
+
+  static const operatorNameByOrgId = <String, String>{
+    'org-atlas-motion': 'Atlas Motion Adventures',
+    'org-medina-stories': 'Medina Stories Collective',
+    'org-desert-lines': 'Desert Lines',
+    'org-ocean-roots': 'Ocean Roots Surf School',
+    'org-fes-riad': 'Riad Culinary Atelier',
+    'org-essaouira-grill': 'Atlantic Grill Hosts',
+  };
+
+  static const operatorBioByOrgId = <String, String>{
+    'org-atlas-motion':
+        'Marrakech-based team running desert and Atlas experiences with licensed guides and clear safety standards.',
+    'org-medina-stories':
+        'Food-forward hosts sharing Medina stories, rooftops, and small-group dining with local partners.',
+    'org-desert-lines':
+        'Desert-focused operator covering Agafay evenings and Sahara-adjacent outings with vetted drivers.',
+    'org-ocean-roots':
+        'Taghazout surf school focused on beginner-friendly coaching, gear, and tide-smart sessions.',
+    'org-fes-riad':
+        'Riad-based cooking experiences in Fes with hands-on prep and market walks.',
+    'org-essaouira-grill':
+        'Essaouira hosts for port-side grilling and coastal food walks.',
+  };
+
   /// Category label per catalog experience id (Explore cards / filters).
   static const exploreCategoryByExperienceId = <String, String>{
     'agafay-quad': 'Adventure',
