@@ -6,6 +6,7 @@ import '../../../core/config/app_env.dart';
 import '../../../core/data/app_mock_data.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/catalog_image.dart';
+import '../../../core/widgets/catalog_operator_row.dart';
 import '../../experiences/domain/experience.dart';
 import '../../experiences/state/catalog_providers.dart';
 import '../../favorites/state/favorites_store.dart';
@@ -24,6 +25,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
   final Set<String> _activeCategories = {};
   String _activeCity = 'All';
+  bool _initialCityApplied = false;
   _ExploreSort _sort = _ExploreSort.recommended;
   _PriceRange _priceRange = _PriceRange.any;
   bool _isInitialLoading = true;
@@ -48,6 +50,14 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_initialCityApplied) {
+      _initialCityApplied = true;
+      final requestedCity = GoRouterState.of(context).uri.queryParameters['city'];
+      if (requestedCity != null && requestedCity.trim().isNotEmpty) {
+        _activeCity = requestedCity.trim();
+      }
+    }
+
     final catalog = ref.watch(marketplaceCatalogProvider);
     final all = catalog.maybeWhen(
       data: (s) => s.items,
@@ -795,6 +805,9 @@ class _ExploreResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final verified = item.trust.verifiedOperator;
+    final host = item.operatorName.trim();
+    final showHost = host.isNotEmpty;
+    final showVerifiedChip = verified && !showHost;
     final ratingLabel = item.rating.average ?? 4.6;
     return InkWell(
       borderRadius: BorderRadius.circular(16),
@@ -912,10 +925,29 @@ class _ExploreResultCard extends StatelessWidget {
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                   ),
-                  const SizedBox(height: 8),
+                  if (showHost) ...[
+                    const SizedBox(height: 10),
+                    CatalogOperatorRow(
+                      name: host,
+                      imageRef: item.operatorLogoUrl,
+                      verified: verified,
+                      avatarSize: 30,
+                      iconSize: 20,
+                      sectionLabel: 'Hosted by',
+                      hostPanel: true,
+                    ),
+                  ],
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10, bottom: 4),
+                    child: Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.45),
+                    ),
+                  ),
                   Row(
                     children: [
-                      if (verified)
+                      if (showVerifiedChip)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
@@ -929,7 +961,7 @@ class _ExploreResultCard extends StatelessWidget {
                                 ),
                           ),
                         ),
-                      if (verified) const SizedBox(width: 8),
+                      if (showVerifiedChip) const SizedBox(width: 8),
                       Icon(Icons.star_rounded, color: AppTokens.brandAccent, size: 18),
                       const SizedBox(width: 3),
                       Text(
@@ -946,17 +978,6 @@ class _ExploreResultCard extends StatelessWidget {
                             ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'View details',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: AppTokens.brandPrimary,
-                          ),
-                    ),
                   ),
                 ],
               ),
@@ -998,6 +1019,18 @@ class _ExploreResultSkeletonCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Container(height: 12, width: 150, color: base),
                 const SizedBox(height: 10),
+                Container(height: 10, width: 72, color: base),
+                const SizedBox(height: 6),
+                Container(
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: base,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(height: 1, color: base),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Container(height: 24, width: 110, color: base),

@@ -11,6 +11,19 @@ export const env = createEnv({
 		DATABASE_URL: z.string().min(1),
 		BETTER_AUTH_SECRET: z.string().min(1),
 		BETTER_AUTH_URL: z.string().url(),
+		/** Web OAuth client (used for Google sign-in flows). */
+		GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+		GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+		/**
+		 * Apple Sign In (web / service identifier). Also set APPLE_APP_BUNDLE_IDENTIFIER
+		 * to your iOS app bundle id when verifying native ID tokens.
+		 */
+		APPLE_CLIENT_ID: z.string().min(1).optional(),
+		APPLE_TEAM_ID: z.string().min(1).optional(),
+		APPLE_KEY_ID: z.string().min(1).optional(),
+		/** PKCS#8 (.p8) private key contents, with optional PEM headers. */
+		APPLE_PRIVATE_KEY: z.string().min(1).optional(),
+		APPLE_APP_BUNDLE_IDENTIFIER: z.string().min(1).optional(),
 		RESEND_API_KEY: z.string().optional(),
 		/** Verified sender (e.g. noreply@yourdomain.com). Defaults to Resend's test address when unset. */
 		RESEND_FROM_EMAIL: z.string().email().optional(),
@@ -40,6 +53,13 @@ export const env = createEnv({
 		DATABASE_URL: process.env.DATABASE_URL,
 		BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
 		BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+		GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+		GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+		APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID,
+		APPLE_TEAM_ID: process.env.APPLE_TEAM_ID,
+		APPLE_KEY_ID: process.env.APPLE_KEY_ID,
+		APPLE_PRIVATE_KEY: process.env.APPLE_PRIVATE_KEY,
+		APPLE_APP_BUNDLE_IDENTIFIER: process.env.APPLE_APP_BUNDLE_IDENTIFIER,
 		RESEND_API_KEY: process.env.RESEND_API_KEY,
 		RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
 		SUPABASE_URL: process.env.SUPABASE_URL,

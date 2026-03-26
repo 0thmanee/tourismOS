@@ -6,6 +6,7 @@ import '../../../core/config/app_env.dart';
 import '../../../core/data/app_mock_data.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/catalog_image.dart';
+import '../../../core/widgets/catalog_operator_row.dart';
 import '../../experiences/data/experience_mock_mapper.dart';
 import '../../experiences/domain/experience.dart';
 import '../../experiences/state/catalog_providers.dart';
@@ -189,6 +190,9 @@ class _SavedCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rating = item.rating.average ?? 4.6;
+    final host = item.operatorName.trim();
+    final showHost = host.isNotEmpty;
+    final verified = item.trust.verifiedOperator;
     return InkWell(
       onTap: () => context.go('/app/home/experience/${item.id}'),
       borderRadius: BorderRadius.circular(16),
@@ -233,7 +237,18 @@ class _SavedCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text('${item.city} • ${item.logistics.durationLabel}'),
-                    const SizedBox(height: 6),
+                    if (showHost) ...[
+                      const SizedBox(height: 4),
+                      CatalogOperatorRow(
+                        name: host,
+                        imageRef: item.operatorLogoUrl,
+                        verified: verified,
+                        avatarSize: 24,
+                        iconSize: 17,
+                        sectionLabel: 'Hosted by',
+                      ),
+                    ],
+                    const Spacer(),
                     Row(
                       children: [
                         Icon(Icons.star_rounded, color: AppTokens.brandAccent, size: 18),

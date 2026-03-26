@@ -19,6 +19,12 @@ class LaunchController extends ChangeNotifier {
   SharedPreferences? _prefs;
   bool _loaded = false;
 
+  Future<void> _ensureLoaded() async {
+    if (_loaded && _prefs != null) return;
+    _prefs = await SharedPreferences.getInstance();
+    _loaded = true;
+  }
+
   bool get isLoaded => _loaded;
   bool get onboardingCompleted => _prefs?.getBool(_kOnboarding) ?? false;
   bool get sessionReady => _prefs?.getBool(_kSession) ?? false;
@@ -39,12 +45,12 @@ class LaunchController extends ChangeNotifier {
   String get preferredLanguage => _prefs?.getString(_kLanguage) ?? 'en';
 
   Future<void> load() async {
-    _prefs = await SharedPreferences.getInstance();
-    _loaded = true;
+    await _ensureLoaded();
     notifyListeners();
   }
 
   Future<void> setOnboardingCompleted({bool value = true}) async {
+    await _ensureLoaded();
     await _prefs?.setBool(_kOnboarding, value);
     notifyListeners();
   }
@@ -53,8 +59,17 @@ class LaunchController extends ChangeNotifier {
     bool value = true,
     bool guest = false,
   }) async {
+    await _ensureLoaded();
     await _prefs?.setBool(_kSession, value);
     await _prefs?.setBool(_kGuest, guest);
+    notifyListeners();
+  }
+
+  /// Clear only auth/session state while keeping onboarding + personalization.
+  Future<void> signOut() async {
+    await _ensureLoaded();
+    await _prefs?.remove(_kSession);
+    await _prefs?.remove(_kGuest);
     notifyListeners();
   }
 
@@ -63,6 +78,7 @@ class LaunchController extends ChangeNotifier {
     String? cityCode,
     String? languageCode,
   }) async {
+    await _ensureLoaded();
     await _prefs?.setString(_kInterests, jsonEncode(interests));
     if (cityCode != null && cityCode.isNotEmpty) {
       await _prefs?.setString(_kCity, cityCode);
@@ -75,6 +91,7 @@ class LaunchController extends ChangeNotifier {
 
   /// Dev / QA: reset entry flow.
   Future<void> debugResetEntryFlow() async {
+    await _ensureLoaded();
     await _prefs?.remove(_kOnboarding);
     await _prefs?.remove(_kSession);
     await _prefs?.remove(_kGuest);

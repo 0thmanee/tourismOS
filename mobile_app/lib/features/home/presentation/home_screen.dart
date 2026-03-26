@@ -221,15 +221,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 20)),
             SliverToBoxAdapter(
-              child: SectionHeader(
-                title: 'Featured experiences',
-                actionLabel: 'See all',
-                onAction: () => context.go('/app/explore'),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: SectionHeader(
+                  title: 'Featured experiences',
+                  actionLabel: 'See all',
+                  onAction: () => context.go('/app/explore'),
+                ),
               ),
             ),
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 290,
+                height: 312,
                 child: ListView.separated(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   scrollDirection: Axis.horizontal,
@@ -243,8 +246,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       duration: e.logistics.durationLabel,
                       priceFromMad: e.price.fromMad,
                       imageRef: e.media.primaryImageRef,
+                      operatorName: e.operatorName,
+                      operatorLogoRef: e.operatorLogoUrl,
+                      category: e.category,
+                      isSaved: savedIds.contains(e.id),
                       verified: e.trust.verifiedOperator,
                       rating: e.rating.average,
+                      onToggleSaved: () =>
+                          ref.read(favoritesStoreProvider.notifier).toggle(e.id),
                       onTap: () => context.go('/app/home/experience/${e.id}'),
                     );
                   },
@@ -357,7 +366,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     final city = HomeFeedMock.cities[i]['name'] as String;
                     final imageAsset = HomeFeedMock.cities[i]['image'] as String?;
                     return InkWell(
-                      onTap: () => context.go('/app/explore'),
+                      onTap: () => context.go(
+                        '/app/explore?city=${Uri.encodeQueryComponent(city)}',
+                      ),
                       borderRadius: BorderRadius.circular(18),
                       child: Container(
                         width: 220,
@@ -426,7 +437,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 290,
+                  height: 312,
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     scrollDirection: Axis.horizontal,
@@ -440,8 +451,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         duration: e.logistics.durationLabel,
                         priceFromMad: e.price.fromMad,
                         imageRef: e.media.primaryImageRef,
+                        operatorName: e.operatorName,
+                        operatorLogoRef: e.operatorLogoUrl,
+                        category: e.category,
+                        isSaved: savedIds.contains(e.id),
                         verified: e.trust.verifiedOperator,
                         rating: e.rating.average,
+                        onToggleSaved: () =>
+                            ref.read(favoritesStoreProvider.notifier).toggle(e.id),
                         onTap: () => context.go('/app/home/experience/${e.id}'),
                       );
                     },
@@ -463,7 +480,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 290,
+                  height: 312,
                   child: Builder(
                     builder: (context) {
                       final snap = catalog.valueOrNull;
@@ -485,8 +502,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             duration: e.logistics.durationLabel,
                             priceFromMad: e.price.fromMad,
                             imageRef: e.media.primaryImageRef,
+                            operatorName: e.operatorName,
+                            operatorLogoRef: e.operatorLogoUrl,
+                            category: e.category,
+                            isSaved: savedIds.contains(e.id),
                             verified: e.trust.verifiedOperator,
                             rating: e.rating.average,
+                            onToggleSaved: () => ref
+                                .read(favoritesStoreProvider.notifier)
+                                .toggle(e.id),
                             onTap: () => context.go('/app/home/experience/${e.id}'),
                           );
                         },
