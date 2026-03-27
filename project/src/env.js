@@ -14,6 +14,9 @@ export const env = createEnv({
 		/** Web OAuth client (used for Google sign-in flows). */
 		GOOGLE_CLIENT_ID: z.string().min(1).optional(),
 		GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+		/** Backward-compatible alias used in some local setups. */
+		GOOGLE_SERVER_CLIENT_ID: z.string().min(1).optional(),
+		GOOGLE_SERVER_CLIENT_SECRET: z.string().min(1).optional(),
 		/**
 		 * Apple Sign In (web / service identifier). Also set APPLE_APP_BUNDLE_IDENTIFIER
 		 * to your iOS app bundle id when verifying native ID tokens.
@@ -55,6 +58,8 @@ export const env = createEnv({
 		BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
 		GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
 		GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+		GOOGLE_SERVER_CLIENT_ID: process.env.GOOGLE_SERVER_CLIENT_ID,
+		GOOGLE_SERVER_CLIENT_SECRET: process.env.GOOGLE_SERVER_CLIENT_SECRET,
 		APPLE_CLIENT_ID: process.env.APPLE_CLIENT_ID,
 		APPLE_TEAM_ID: process.env.APPLE_TEAM_ID,
 		APPLE_KEY_ID: process.env.APPLE_KEY_ID,

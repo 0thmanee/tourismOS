@@ -4,6 +4,7 @@ import {
 	jsonV1Ok,
 	v1OptionsResponse,
 } from "~/app/api/v1/_lib/http";
+import { getV1AuthSession } from "~/app/api/v1/_lib/auth";
 import { bookingRowToTripDTO } from "~/app/api/v1/_lib/trip.mapper";
 import { getTripForPhoneRepo } from "~/app/api/v1/bookings/repo/b2c-trips.repo";
 
@@ -22,6 +23,17 @@ export async function GET(
 	context: { params: Promise<{ bookingId: string }> },
 ) {
 	try {
+		// Auth boundary: trip detail must not be accessible without backend session truth.
+		const session = await getV1AuthSession(request);
+		if (!session) {
+			return jsonV1Error(
+				request,
+				401,
+				"UNAUTHORIZED",
+				"Authentication required",
+			);
+		}
+
 		const { bookingId } = await context.params;
 		const id = bookingId?.trim() ?? "";
 		if (!id) {

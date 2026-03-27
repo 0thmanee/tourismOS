@@ -1,9 +1,8 @@
-import 'package:better_auth_flutter/better_auth_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/auth/better_auth_session.dart';
+import '../../../core/auth/auth_orchestrator.dart';
 import '../../../core/state/launch_providers.dart';
 
 class EmailSignupScreen extends ConsumerStatefulWidget {
@@ -31,38 +30,34 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
-    final (_, err) = await BetterAuth.instance.client.signUpWithEmailAndPassword(
-      email: _email.text.trim(),
-      password: _password.text,
-      name: _name.text.trim(),
-    );
-    if (!mounted) return;
-    setState(() => _loading = false);
-    if (err != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(err.message)),
-      );
-      return;
-    }
-    final (pair, sessErr) = await BetterAuth.instance.client.getSession();
-    if (sessErr != null || pair == null || pair.$2 == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Account created. Check your email to verify, then sign in.',
-          ),
-        ),
-      );
+    try {
+      final result = await ref.read(authOrchestratorProvider).signUpWithEmail(
+            launch: ref.read(launchControllerProvider),
+            name: _name.text.trim(),
+            email: _email.text.trim(),
+            password: _password.text,
+          );
       if (!mounted) return;
-      context.go('/auth/email');
-      return;
+      if (result == EmailSignupResult.verificationRequired) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Account created. Check your email to verify, then sign in.',
+            ),
+          ),
+        );
+        context.go('/auth/email');
+        return;
+      }
+      context.go('/splash');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-    final (session, user) = pair;
-    BetterAuth.instance.client.session = session;
-    BetterAuth.instance.client.user = user;
-    await syncLaunchSessionFromBetterAuth(ref.read(launchControllerProvider));
-    if (!mounted) return;
-    context.go('/app/home');
   }
 
   @override

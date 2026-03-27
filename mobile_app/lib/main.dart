@@ -28,9 +28,20 @@ class _MoroccoExperiencesAppState extends ConsumerState<MoroccoExperiencesApp> {
   GoRouter? _router;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authOrchestratorProvider).bootstrap(
+            ref.read(launchControllerProvider),
+          );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final launch = ref.read(launchControllerProvider);
-    _router ??= createAppRouter(launch);
+    final auth = ref.read(authOrchestratorProvider);
+    _router ??= createAppRouter(launch, auth);
 
     return MaterialApp.router(
       title: AppMockData.appBrandName,

@@ -18,26 +18,81 @@ import '../../features/profile/presentation/support_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/trips/presentation/trips_screen.dart';
 import '../../features/trips/presentation/trip_detail_screen.dart';
+import '../auth/auth_orchestrator.dart';
 import '../state/launch_controller.dart';
 
 /// Single [GoRouter] instance for the whole app — create once (e.g. in [main.dart]).
 ///
 /// Do not put this inside a Riverpod [Provider] that rebuilds when [LaunchController]
 /// notifies, or navigation resets to [initialLocation].
-GoRouter createAppRouter(LaunchController launch) {
+class _RouterRefresh extends ChangeNotifier {
+  _RouterRefresh(this.launch, this.auth) {
+    launch.addListener(_notify);
+    auth.addListener(_notify);
+  }
+
+  final LaunchController launch;
+  final AuthOrchestrator auth;
+
+  void _notify() => notifyListeners();
+}
+
+GoRouter createAppRouter(LaunchController launch, AuthOrchestrator auth) {
+  Uri? pendingAfterBootstrap;
   return GoRouter(
     initialLocation: '/splash',
     debugLogDiagnostics: kDebugMode,
-    refreshListenable: launch,
+    refreshListenable: _RouterRefresh(launch, auth),
     redirect: (context, state) {
       final path = state.uri.path;
+
+      if (!auth.hasCheckedSession || auth.isBootstrapping) {
+        if (path != '/splash') {
+          pendingAfterBootstrap ??= state.uri;
+          return '/splash';
+        }
+        return null;
+      }
+
+      final canEnterApp = auth.authStatus == AuthStatus.authenticated ||
+          auth.authStatus == AuthStatus.guest;
+
+      // After bootstrap resolves, restore the initially requested location once,
+      // as long as the resolved auth/onboarding state allows it.
+      if (pendingAfterBootstrap != null) {
+        final requested = pendingAfterBootstrap!;
+        pendingAfterBootstrap = null;
+        final requestedPath = requested.path;
+
+        final requiresOnboarding = requestedPath.startsWith('/app') ||
+            requestedPath.startsWith('/auth') ||
+            requestedPath == '/onboarding';
+
+        if (requiresOnboarding && !launch.onboardingCompleted) {
+          return '/onboarding';
+        }
+        if (requestedPath.startsWith('/app') && !canEnterApp) {
+          return '/auth';
+        }
+        if (requestedPath.startsWith('/auth') && canEnterApp) {
+          return '/app/home';
+        }
+        return requested.toString();
+      }
+
+      if (!launch.onboardingCompleted) {
+        if (path != '/onboarding') return '/onboarding';
+        return null;
+      }
+
       if (path.startsWith('/app')) {
-        if (!launch.onboardingCompleted) return '/onboarding';
-        if (!launch.sessionReady) return '/auth';
+        return canEnterApp ? null : '/auth';
       }
       if (path.startsWith('/auth')) {
-        if (!launch.onboardingCompleted) return '/onboarding';
-        if (launch.sessionReady) return '/app/home';
+        return canEnterApp ? '/app/home' : null;
+      }
+      if (path == '/splash' || path == '/onboarding') {
+        return canEnterApp ? '/app/home' : '/auth';
       }
       return null;
     },

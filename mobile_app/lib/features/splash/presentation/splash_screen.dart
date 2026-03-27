@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/auth/better_auth_session.dart';
 import '../../../core/data/app_mock_data.dart';
 import '../../../core/state/launch_providers.dart';
 import '../../../core/theme/app_tokens.dart';
@@ -32,13 +31,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     _refreshOfflineBanner();
   }
 
-  /// Best-effort; does not block the Continue button.
   Future<void> _refreshOfflineBanner() async {
-    final launch = ref.read(launchControllerProvider);
-    await launch.load();
-    if (launch.sessionReady && !launch.isGuest) {
-      await syncLaunchSessionFromBetterAuth(launch);
-    }
     if (!mounted) return;
     final online = await _hasNetwork();
     if (!mounted) return;
@@ -46,16 +39,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _continue() async {
-    final launch = ref.read(launchControllerProvider);
-    if (!launch.isLoaded) {
-      await launch.load();
-    }
-    if (launch.sessionReady && !launch.isGuest) {
-      await syncLaunchSessionFromBetterAuth(launch);
-    }
+    await ref.read(authOrchestratorProvider).bootstrap(
+          ref.read(launchControllerProvider),
+        );
     if (!mounted) return;
-    // Router redirect decides: first launch -> onboarding, then auth/home.
-    context.go('/auth');
+    // Router redirect decides destination from one resolved auth state.
+    context.go('/splash');
   }
 
   Future<void> _retryNetwork() => _refreshOfflineBanner();

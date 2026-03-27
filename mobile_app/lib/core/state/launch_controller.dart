@@ -97,6 +97,20 @@ class LaunchController extends ChangeNotifier {
     await _prefs?.remove(_kGuest);
     await _prefs?.remove(_kInterests);
     await _prefs?.remove(_kCity);
+    await _prefs?.remove(_kLanguage);
+    notifyListeners();
+  }
+
+  /// Full local wipe: onboarding, session, and personalization.
+  /// Use for "fresh start" logout behavior.
+  Future<void> wipeAllLocalState() async {
+    await _ensureLoaded();
+    await _prefs?.remove(_kOnboarding);
+    await _prefs?.remove(_kSession);
+    await _prefs?.remove(_kGuest);
+    await _prefs?.remove(_kInterests);
+    await _prefs?.remove(_kCity);
+    await _prefs?.remove(_kLanguage);
     notifyListeners();
   }
 }

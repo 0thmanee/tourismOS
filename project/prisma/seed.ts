@@ -25,8 +25,8 @@ const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL is not set");
 
 const prisma = new PrismaClient({
-	adapter: new PrismaPg({ connectionString }),
-	log: ["error"],
+  adapter: new PrismaPg({ connectionString }),
+  log: ["error"],
 });
 
 const SEED_PASSWORD = "Password123!";
@@ -413,51 +413,51 @@ function multiDayEndAt(startAt: Date, durationDays: number): Date {
 }
 
 async function main() {
-	const hashedPassword = await hashPassword(SEED_PASSWORD);
+  const hashedPassword = await hashPassword(SEED_PASSWORD);
 
-	const admin = await prisma.user.upsert({
+  const admin = await prisma.user.upsert({
 		where: { email: "admin@tourismos.ma" },
-		update: {},
-		create: {
+    update: {},
+    create: {
 			name: "Admin TourismOS",
 			email: "admin@tourismos.ma",
-			emailVerified: true,
-			role: "superadmin",
-			status: "enabled",
-			profileCompleted: true,
-		},
-	});
+      emailVerified: true,
+      role: "superadmin",
+      status: "enabled",
+      profileCompleted: true,
+    },
+  });
 
-	const adminAccount = await prisma.account.findFirst({
+  const adminAccount = await prisma.account.findFirst({
 		where: {
 			userId: admin.id,
 			providerId: "credential",
 			accountId: admin.email,
 		},
-	});
-	if (adminAccount) {
+  });
+  if (adminAccount) {
 		await prisma.account.update({
 			where: { id: adminAccount.id },
 			data: { password: hashedPassword },
 		});
-	} else {
-		await prisma.account.create({
-			data: {
-				userId: admin.id,
-				providerId: "credential",
-				accountId: admin.email,
-				password: hashedPassword,
-			},
-		});
-	}
+  } else {
+    await prisma.account.create({
+      data: {
+        userId: admin.id,
+        providerId: "credential",
+        accountId: admin.email,
+        password: hashedPassword,
+      },
+    });
+  }
 
-	console.log("Admin:", admin.email);
+  console.log("Admin:", admin.email);
 
 	const orgIdBySlug = new Map<string, string>();
 
 	for (const p of PARTNER_ORGS) {
-		const org = await prisma.organization.upsert({
-			where: { slug: p.slug },
+    const org = await prisma.organization.upsert({
+      where: { slug: p.slug },
 			update: {
 				name: p.orgName,
 				logo: p.logo,
@@ -472,18 +472,18 @@ async function main() {
 		});
 		orgIdBySlug.set(p.slug, org.id);
 
-		const user = await prisma.user.upsert({
-			where: { email: p.userEmail },
-			update: {},
-			create: {
-				name: p.userName,
-				email: p.userEmail,
-				emailVerified: true,
-				role: "partner",
-				status: "enabled",
-				profileCompleted: true,
-			},
-		});
+    const user = await prisma.user.upsert({
+      where: { email: p.userEmail },
+      update: {},
+      create: {
+        name: p.userName,
+        email: p.userEmail,
+        emailVerified: true,
+        role: "partner",
+        status: "enabled",
+        profileCompleted: true,
+      },
+    });
 
 		const cred = await prisma.account.findFirst({
 			where: {
@@ -497,32 +497,32 @@ async function main() {
 				where: { id: cred.id },
 				data: { password: hashedPassword },
 			});
-		} else {
-			await prisma.account.create({
-				data: {
-					userId: user.id,
-					providerId: "credential",
-					accountId: user.email,
-					password: hashedPassword,
-				},
-			});
-		}
+    } else {
+      await prisma.account.create({
+        data: {
+          userId: user.id,
+          providerId: "credential",
+          accountId: user.email,
+          password: hashedPassword,
+        },
+      });
+    }
 
-		await prisma.member.upsert({
-			where: {
-				organizationId_userId: { organizationId: org.id, userId: user.id },
-			},
-			update: {},
-			create: {
-				organizationId: org.id,
-				userId: user.id,
-				role: "owner",
-			},
-		});
+    await prisma.member.upsert({
+      where: {
+        organizationId_userId: { organizationId: org.id, userId: user.id },
+      },
+      update: {},
+      create: {
+        organizationId: org.id,
+        userId: user.id,
+        role: "owner",
+      },
+    });
 
 		const [firstName, ...rest] = p.userName.split(" ");
-		await prisma.profile.upsert({
-			where: { userId: user.id },
+    await prisma.profile.upsert({
+      where: { userId: user.id },
 			update: {
 				firstName: firstName ?? p.userName,
 				lastName: rest.join(" ") || "—",
@@ -535,21 +535,21 @@ async function main() {
 				agreeTerms: true,
 				agreeMarketing: false,
 			},
-			create: {
-				userId: user.id,
+      create: {
+        userId: user.id,
 				firstName: firstName ?? p.userName,
 				lastName: rest.join(" ") || "—",
-				phone: "+212 6XX XXX XXX",
+        phone: "+212 6XX XXX XXX",
 				entityType: p.entityType,
-				entityName: p.orgName,
+        entityName: p.orgName,
 				region: p.region,
 				city: p.city,
 				categories: p.categories,
-				agreeTerms: true,
-				agreeMarketing: false,
-			},
-		});
-	}
+        agreeTerms: true,
+        agreeMarketing: false,
+      },
+    });
+  }
 
 	console.log(
 		"Partners:",
@@ -578,17 +578,17 @@ async function main() {
 		const oid = orgIdBySlug.get(p.slug);
 		if (!oid) throw new Error(`Missing org id for slug: ${p.slug}`);
 		await prisma.organizationSettings.create({
-			data: {
+        data: {
 				organizationId: oid,
 				businessName: p.businessName,
 				activities: p.settingsActivities,
 				pricingPresets: p.pricingPresets,
-			},
-		});
+        },
+      });
 
 		for (const spec of p.activities) {
 			await prisma.activity.create({
-				data: {
+          data: {
 					organizationId: oid,
 					name: spec.name,
 					kind: spec.kind,
@@ -604,9 +604,9 @@ async function main() {
 					requiresTransport: spec.requiresTransport ?? false,
 					requiresEquipment: spec.requiresEquipment ?? false,
 					isActive: true,
-				},
-			});
-		}
+          },
+        });
+      }
 	}
 
 	const demoActivities = await prisma.activity.findMany({
@@ -808,10 +808,10 @@ async function main() {
 						bookingId: booking.id,
 						sender,
 						body,
-					},
-				});
-			}
-		}
+        },
+      });
+    }
+  }
 
 		if (
 			activeStaff.length > 0 &&
@@ -830,8 +830,8 @@ async function main() {
 					staffMemberId: guide.id,
 					assignmentRole: "Lead guide",
 					notes: Math.random() > 0.5 ? "Meet at main square" : null,
-				},
-			});
+      },
+    });
 
 			if (driver && Math.random() > 0.45) {
 				await prisma.bookingAssignment
@@ -873,7 +873,7 @@ async function main() {
 		});
 
 		await prisma.booking.create({
-			data: {
+        data: {
 				organizationId: oid,
 				customerId: customer1.id,
 				activityTitle: "Sample Activity",
@@ -883,9 +883,9 @@ async function main() {
 				status: "NEW",
 				paymentStatus: "UNPAID",
 				depositCents: null,
-			},
-		});
-	}
+        },
+      });
+    }
 
 	const totalActivities = await prisma.activity.count();
 	console.log(`Marketplace activities (all orgs): ${totalActivities}`);
@@ -900,9 +900,9 @@ async function main() {
 }
 
 main()
-	.then(() => prisma.$disconnect())
-	.catch((e) => {
-		console.error(e);
+  .then(() => prisma.$disconnect())
+  .catch((e) => {
+    console.error(e);
 		void prisma.$disconnect();
-		process.exit(1);
-	});
+    process.exit(1);
+  });

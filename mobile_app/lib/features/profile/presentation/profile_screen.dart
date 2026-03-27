@@ -3,9 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
-import '../../../core/auth/better_auth_session.dart';
 import '../../../core/auth/better_auth_user_api.dart';
 import '../../../core/state/launch_controller.dart';
 import '../../../core/state/launch_providers.dart';
@@ -31,7 +29,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (!launch.sessionReady || launch.isGuest) return;
     setState(() => _refreshing = true);
     try {
-      await refreshBetterAuthClientSession();
+      await ref.read(authOrchestratorProvider).syncSession(launch);
     } finally {
       if (mounted) {
         setState(() => _refreshing = false);
@@ -41,15 +39,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _signOut() async {
     final launch = ref.read(launchControllerProvider);
-    if (launch.isGuest) {
-      await launch.signOut();
-    } else {
-      await signOutEverywhere(launch);
-      try {
-        await GoogleSignIn().signOut();
-      } catch (_) {}
-    }
-    if (mounted) context.go('/auth');
+    await ref.read(authOrchestratorProvider).signOutAll(launch);
+    if (mounted) context.go('/splash');
   }
 
   Future<void> _showEditProfileDialog() async {
@@ -136,7 +127,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             name: name,
             image: image,
           );
-      await refreshBetterAuthClientSession();
+      await ref
+          .read(authOrchestratorProvider)
+          .syncSession(ref.read(launchControllerProvider));
       if (mounted) {
         setState(() {});
         ScaffoldMessenger.of(context).showSnackBar(
@@ -247,7 +240,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             currentPassword: cur,
             newPassword: nw,
           );
-      await refreshBetterAuthClientSession();
+      await ref
+          .read(authOrchestratorProvider)
+          .syncSession(ref.read(launchControllerProvider));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Password updated')),

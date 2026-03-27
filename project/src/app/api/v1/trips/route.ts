@@ -3,6 +3,7 @@ import {
 	jsonV1Ok,
 	v1OptionsResponse,
 } from "~/app/api/v1/_lib/http";
+import { getV1AuthSession } from "~/app/api/v1/_lib/auth";
 import { bookingRowToTripDTO } from "~/app/api/v1/_lib/trip.mapper";
 import { listTripsForPhoneRepo } from "~/app/api/v1/bookings/repo/b2c-trips.repo";
 import { listTripsQuerySchema } from "~/app/api/v1/trips/schemas/list-trips.query";
@@ -16,6 +17,17 @@ export async function OPTIONS(request: Request) {
 
 export async function GET(request: Request) {
 	try {
+		// Auth boundary: trips must not be accessible without backend session truth.
+		const session = await getV1AuthSession(request);
+		if (!session) {
+			return jsonV1Error(
+				request,
+				401,
+				"UNAUTHORIZED",
+				"Authentication required",
+			);
+		}
+
 		const url = new URL(request.url);
 		const raw = Object.fromEntries(url.searchParams.entries());
 		const parsed = listTripsQuerySchema.safeParse(raw);

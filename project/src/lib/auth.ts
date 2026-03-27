@@ -34,7 +34,29 @@ async function generateAppleClientSecret(): Promise<string> {
 		.sign(key);
 }
 
-const googleOAuthConfigured = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+const googleClientId = env.GOOGLE_CLIENT_ID ?? env.GOOGLE_SERVER_CLIENT_ID;
+const googleClientSecret =
+	env.GOOGLE_CLIENT_SECRET ?? env.GOOGLE_SERVER_CLIENT_SECRET;
+const googleOAuthConfigured = Boolean(googleClientId && googleClientSecret);
+
+function localTrustedOrigins(baseUrl: string): string[] {
+	const set = new Set<string>([baseUrl]);
+	try {
+		const u = new URL(baseUrl);
+		const isLocalhost =
+			u.hostname === "localhost" ||
+			u.hostname === "127.0.0.1" ||
+			u.hostname === "::1";
+		if (isLocalhost) {
+			const port = u.port || "3000";
+			set.add(`http://127.0.0.1:${port}`);
+			set.add(`http://10.0.2.2:${port}`); // Android emulator host alias
+		}
+	} catch {
+		// no-op
+	}
+	return [...set];
+}
 
 const appleOAuthConfigured = Boolean(
 	env.APPLE_CLIENT_ID &&
@@ -129,8 +151,8 @@ export const auth = betterAuth({
 		...(googleOAuthConfigured
 			? {
 					google: {
-						clientId: env.GOOGLE_CLIENT_ID as string,
-						clientSecret: env.GOOGLE_CLIENT_SECRET as string,
+						clientId: googleClientId as string,
+						clientSecret: googleClientSecret as string,
 					},
 				}
 			: {}),
@@ -149,7 +171,7 @@ export const auth = betterAuth({
 			: {}),
 	},
 	trustedOrigins: [
-		env.BETTER_AUTH_URL,
+		...localTrustedOrigins(env.BETTER_AUTH_URL),
 		...(appleOAuthConfigured ? ["https://appleid.apple.com"] : []),
 	],
 });
