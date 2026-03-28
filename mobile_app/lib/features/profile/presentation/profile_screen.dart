@@ -8,6 +8,7 @@ import '../../../core/auth/better_auth_user_api.dart';
 import '../../../core/state/launch_controller.dart';
 import '../../../core/state/launch_providers.dart';
 import '../../../core/widgets/app_main_app_bar.dart';
+import '../../trips/state/trips_store.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -41,6 +42,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _signOut() async {
     final launch = ref.read(launchControllerProvider);
     await ref.read(authOrchestratorProvider).signOutAll(launch);
+    clearTripsLocalCache(ref);
     if (mounted) context.go('/splash');
   }
 
@@ -366,6 +368,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 subtitle: 'Clears onboarding + session, then goes to Splash',
                 onTap: () async {
                   await ref.read(launchControllerProvider).debugResetEntryFlow();
+                  clearTripsLocalCache(ref);
                   if (context.mounted) context.go('/splash');
                 },
               ),

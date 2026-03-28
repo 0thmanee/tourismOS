@@ -52,4 +52,42 @@ class BookingsApi {
     }
     return item;
   }
+
+  Future<List<Map<String, dynamic>>> listBookingMessages({
+    required String bookingId,
+    required String phone,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/v1/bookings/$bookingId/messages',
+      queryParameters: {'phone': phone},
+    );
+    final items = response.data?['items'];
+    if (items is! List) return const [];
+    final out = <Map<String, dynamic>>[];
+    for (final e in items) {
+      if (e is Map<String, dynamic>) {
+        out.add(e);
+      } else if (e is Map) {
+        out.add(Map<String, dynamic>.from(e));
+      }
+    }
+    return out;
+  }
+
+  Future<Map<String, dynamic>> postBookingMessage({
+    required String bookingId,
+    required String phone,
+    required String body,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/v1/bookings/$bookingId/messages',
+      queryParameters: {'phone': phone},
+      data: {'body': body},
+    );
+    final item = response.data?['item'];
+    if (item is! Map<String, dynamic>) {
+      throw StateError('Invalid message response');
+    }
+    return item;
+  }
 }

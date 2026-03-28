@@ -336,8 +336,10 @@ model BookingAssignment {
 model BookingMessage {
   id        String   @id @default(cuid())
   bookingId String
-  sender    String // CUSTOMER | OPERATOR
+  sender    String // CUSTOMER | OPERATOR | SYSTEM
+  type      String   @default("TEXT") // TEXT | SYSTEM | PROPOSAL | REQUEST_INFO | LOGISTICS
   body      String  @db.Text
+  metadata  Json?
   createdAt DateTime @default(now())
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)

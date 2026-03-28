@@ -2,10 +2,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/data/app_mock_data.dart';
 
+import 'trips_phone_provider.dart';
+
 typedef TripItem = Map<String, dynamic>;
 
 final tripsStoreProvider =
     StateNotifierProvider<TripsStore, List<TripItem>>((ref) => TripsStore());
+
+/// Drops server-synced trip rows and the last booking phone hint (sign-out / dev reset).
+void clearTripsLocalCache(WidgetRef ref) {
+  ref.read(tripsStoreProvider.notifier).clearCachedTrips();
+  ref.read(b2cTravelerPhoneProvider.notifier).state = null;
+}
 
 class TripsStore extends StateNotifier<List<TripItem>> {
   TripsStore() : super(seedTrips);
@@ -26,5 +34,10 @@ class TripsStore extends StateNotifier<List<TripItem>> {
 
   void replaceAll(List<TripItem> items) {
     state = List<TripItem>.from(items);
+  }
+
+  /// Clears in-memory trips from remote sync (empty list until next fetch).
+  void clearCachedTrips() {
+    state = [];
   }
 }

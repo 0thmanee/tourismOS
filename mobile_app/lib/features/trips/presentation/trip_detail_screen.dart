@@ -5,7 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/config/app_env.dart';
 import '../../../core/widgets/app_main_app_bar.dart';
 import '../../../core/widgets/catalog_image.dart';
+import '../state/booking_messages_provider.dart';
+import '../state/bookings_providers.dart';
 import '../state/trip_remote_providers.dart';
+import '../state/trips_phone_provider.dart';
 import '../state/trips_store.dart';
 
 bool _tripHasNote(String? s) => s != null && s.trim().isNotEmpty;
@@ -212,6 +215,11 @@ class _TripDetailLoadedView extends StatelessWidget {
                       ['Details', logisticsHint],
                     ],
                   ),
+                  if (AppEnv.useRemoteTrips &&
+                      ((trip['bookingId'] as String?)?.isNotEmpty ?? false))
+                    _UpdatesAndMessagesSection(
+                      bookingId: trip['bookingId'] as String,
+                    ),
                   const SizedBox(height: 14),
                   Text(
                     'Documents',
@@ -596,6 +604,255 @@ class _DocTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _UpdatesAndMessagesSection extends ConsumerStatefulWidget {
+  const _UpdatesAndMessagesSection({required this.bookingId});
+
+  final String bookingId;
+
+  @override
+  ConsumerState<_UpdatesAndMessagesSection> createState() =>
+      _UpdatesAndMessagesSectionState();
+}
+
+class _UpdatesAndMessagesSectionState
+    extends ConsumerState<_UpdatesAndMessagesSection> {
+  final TextEditingController _replyController = TextEditingController();
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _replyController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendReply() async {
+    final text = _replyController.text.trim();
+    if (text.isEmpty || _sending) return;
+    setState(() => _sending = true);
+    try {
+      final phone =
+          resolveB2cTripsPhoneFromSaved(ref.read(b2cTravelerPhoneProvider));
+      await ref.read(bookingsApiProvider).postBookingMessage(
+            bookingId: widget.bookingId,
+            phone: phone,
+            body: text,
+          );
+      _replyController.clear();
+      ref.invalidate(bookingMessagesProvider(widget.bookingId));
+    } catch (e, st) {
+      debugPrint('postBookingMessage failed: $e\n$st');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not send message: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final async = ref.watch(bookingMessagesProvider(widget.bookingId));
+    final cs = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 14),
+        Text(
+          'Updates & messages',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+        ),
+        const SizedBox(height: 8),
+        async.when(
+          data: (items) {
+            if (items.isEmpty) {
+              return Text(
+                'No updates yet. We will post status changes and replies here.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+              );
+            }
+            return _BookingMessageTimeline(messages: items);
+          },
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (e, _) => Text(
+            'Could not load messages.',
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: cs.error),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _replyController,
+          minLines: 1,
+          maxLines: 4,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(
+            labelText: 'Reply to your host',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            suffixIcon: IconButton(
+              tooltip: 'Send',
+              onPressed: _sending ? null : _sendReply,
+              icon: _sending
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.send_rounded),
+            ),
+          ),
+          onSubmitted: (_) => _sendReply(),
+        ),
+      ],
+    );
+  }
+}
+
+class _BookingMessageTimeline extends StatelessWidget {
+  const _BookingMessageTimeline({required this.messages});
+
+  final List<Map<String, dynamic>> messages;
+
+  static String _dayKey(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  static String _dayHeader(DateTime d) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(d.year, d.month, d.day);
+    if (target == today) return 'Today';
+    if (target == today.subtract(const Duration(days: 1))) {
+      return 'Yesterday';
+    }
+    const w = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return '${w[(d.weekday - 1) % 7]} ${d.day}/${d.month}/${d.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String? lastDay;
+    final tiles = <Widget>[];
+
+    for (final m in messages) {
+      final iso = m['createdAt'] as String?;
+      final created = iso != null ? DateTime.tryParse(iso) : null;
+      final dk = created != null ? _dayKey(created) : '';
+      if (dk.isNotEmpty && dk != lastDay) {
+        lastDay = dk;
+        tiles.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6, top: 4),
+            child: Text(
+              _dayHeader(created!),
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+          ),
+        );
+      }
+      tiles.add(_BookingMessageTile(raw: m));
+      tiles.add(const SizedBox(height: 8));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: tiles,
+    );
+  }
+}
+
+class _BookingMessageTile extends StatelessWidget {
+  const _BookingMessageTile({required this.raw});
+
+  final Map<String, dynamic> raw;
+
+  @override
+  Widget build(BuildContext context) {
+    final sender = (raw['sender'] as String? ?? '').toUpperCase();
+    final type = (raw['type'] as String? ?? 'TEXT').toUpperCase();
+    final body = raw['body'] as String? ?? '';
+    final cs = Theme.of(context).colorScheme;
+    final isSystem = sender == 'SYSTEM' || type == 'SYSTEM';
+    final isOperator = sender == 'OPERATOR';
+
+    if (isSystem) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cs.outlineVariant),
+        ),
+        child: Text(
+          body,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
+        ),
+      );
+    }
+
+    final align =
+        isOperator ? CrossAxisAlignment.start : CrossAxisAlignment.end;
+    final label = isOperator ? 'Operator' : 'You';
+
+    return Column(
+      crossAxisAlignment: align,
+      children: [
+        Container(
+          constraints: const BoxConstraints(maxWidth: 320),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isOperator ? cs.primaryContainer : cs.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isOperator
+                  ? cs.primary.withValues(alpha: 0.25)
+                  : cs.outlineVariant,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: cs.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                body,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -9,6 +9,21 @@ import type {
 	PaymentStatus,
 } from "../schemas/bookings.schema";
 
+function systemLineForNewBooking(status: BookingStatus): string {
+	if (status === "CONFIRMED") return "Booking confirmed.";
+	return "Booking received. The operator will review it.";
+}
+
+function systemLineForStatusTransition(
+	from: BookingStatus,
+	to: BookingStatus,
+): string | null {
+	if (from === to) return null;
+	if (to === "CONFIRMED") return "Booking confirmed.";
+	if (to === "CANCELLED") return "Booking cancelled.";
+	return null;
+}
+
 const inboxSelect = {
 	id: true,
 	status: true,
@@ -60,10 +75,12 @@ export async function listMyBookingsForInboxRepo(
 	return rows.map((row) => mapInboxRow(row));
 }
 
-const messageSelect = {
+export const bookingMessageSelect = {
 	id: true,
 	sender: true,
+	type: true,
 	body: true,
+	metadata: true,
 	createdAt: true,
 } as const;
 
@@ -78,7 +95,7 @@ export async function getMyBookingDetailRepo(
 			depositCents: true,
 			messages: {
 				orderBy: { createdAt: "asc" },
-				select: messageSelect,
+				select: bookingMessageSelect,
 			},
 			assignments: {
 				orderBy: { createdAt: "asc" },
@@ -186,17 +203,30 @@ export async function createBookingRepo(data: {
 			},
 		});
 
-		let messages: BookingMessageRow[] = [];
+		const messages: BookingMessageRow[] = [];
+
+		const systemMsg = await tx.bookingMessage.create({
+			data: {
+				bookingId: booking.id,
+				sender: "SYSTEM" as BookingMessageSender,
+				type: "SYSTEM",
+				body: systemLineForNewBooking(data.status),
+			},
+			select: bookingMessageSelect,
+		});
+		messages.push(systemMsg as BookingMessageRow);
+
 		if (data.initialNote && data.initialNote.trim()) {
 			const msg = await tx.bookingMessage.create({
 				data: {
 					bookingId: booking.id,
 					sender: "OPERATOR" as BookingMessageSender,
+					type: "TEXT",
 					body: data.initialNote,
 				},
-				select: messageSelect,
+				select: bookingMessageSelect,
 			});
-			messages = [msg as BookingMessageRow];
+			messages.push(msg as BookingMessageRow);
 		}
 
 		const { customer: c, depositCents, ...rest } = booking;
@@ -332,7 +362,7 @@ export async function updateBookingRepo(data: {
 			depositCents: true,
 			messages: {
 				orderBy: { createdAt: "asc" },
-				select: messageSelect,
+				select: bookingMessageSelect,
 			},
 			assignments: {
 				orderBy: { createdAt: "asc" },
@@ -399,25 +429,41 @@ export async function setBookingStatusRepo(data: {
 	organizationId: string;
 	status: BookingStatus;
 }): Promise<BookingInboxRow | null> {
-	const existing = await prisma.booking.findFirst({
-		where: { id: data.bookingId, organizationId: data.organizationId },
-		select: { id: true },
-	});
-	if (!existing) return null;
+	return prisma.$transaction(async (tx) => {
+		const existing = await tx.booking.findFirst({
+			where: { id: data.bookingId, organizationId: data.organizationId },
+			select: { id: true, status: true },
+		});
+		if (!existing) return null;
 
-	const updated = await prisma.booking.update({
-		where: { id: data.bookingId },
-		data: { status: data.status },
-		select: inboxSelect,
-	});
+		const prevStatus = existing.status as BookingStatus;
 
-	return {
-		...updated,
-		status: updated.status as BookingStatus,
-		paymentStatus: updated.paymentStatus as PaymentStatus,
-		customerName: updated.customer.name,
-		customerPhone: updated.customer.phone,
-	} as unknown as BookingInboxRow;
+		const updated = await tx.booking.update({
+			where: { id: data.bookingId },
+			data: { status: data.status },
+			select: inboxSelect,
+		});
+
+		const line = systemLineForStatusTransition(prevStatus, data.status);
+		if (line) {
+			await tx.bookingMessage.create({
+				data: {
+					bookingId: data.bookingId,
+					sender: "SYSTEM" as BookingMessageSender,
+					type: "SYSTEM",
+					body: line,
+				},
+			});
+		}
+
+		return {
+			...updated,
+			status: updated.status as BookingStatus,
+			paymentStatus: updated.paymentStatus as PaymentStatus,
+			customerName: updated.customer.name,
+			customerPhone: updated.customer.phone,
+		} as unknown as BookingInboxRow;
+	});
 }
 
 export async function sendBookingMessageRepo(data: {
@@ -435,9 +481,10 @@ export async function sendBookingMessageRepo(data: {
 		data: {
 			bookingId: data.bookingId,
 			sender: "OPERATOR" as BookingMessageSender,
+			type: "TEXT",
 			body: data.body,
 		},
-		select: messageSelect,
+		select: bookingMessageSelect,
 	});
 
 	return msg as unknown as BookingMessageRow;

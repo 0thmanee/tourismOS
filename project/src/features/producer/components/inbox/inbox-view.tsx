@@ -5,7 +5,7 @@ import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import type { ActivityRow } from "~/app/api/activities";
 import type {
-	BookingMessageSender,
+	BookingMessageRow,
 	BookingStatus,
 	PaymentStatus,
 } from "~/app/api/bookings";
@@ -447,14 +447,7 @@ export function InboxView() {
 		setDepositOpen(false);
 	}
 
-	function renderConversation(
-		messages: Array<{
-			id: string;
-			sender: BookingMessageSender;
-			body: string;
-			createdAt: Date | string;
-		}>,
-	) {
+	function renderConversation(messages: BookingMessageRow[]) {
 		if (!messages.length) {
 			return (
 				<div className="field rounded-xl p-4">
@@ -467,27 +460,40 @@ export function InboxView() {
 
 		return (
 			<div className="flex flex-col gap-2">
-				{messages.map((m) => (
-					<div
-						className={`flex ${m.sender === "OPERATOR" ? "justify-end" : "justify-start"}`}
-						key={m.id}
-					>
-						<div
-							className={`max-w-[80%] rounded-2xl border px-4 py-3 ${
-								m.sender === "OPERATOR"
-									? "border-white/10 bg-forest-dark text-white"
-									: "card text-(--text-1)"
-							}`}
-						>
-							<p className="font-sans font-semibold text-sm">{m.body}</p>
-							<p
-								className={`mt-1 font-sans text-[10px] ${m.sender === "OPERATOR" ? "text-white/70" : "text-(--text-2)"}`}
-							>
-								{formatDateTime(m.createdAt)}
-							</p>
+				{messages.map((m) => {
+					const isSystem =
+						m.sender === "SYSTEM" || m.type === "SYSTEM";
+					const align = isSystem
+						? "justify-center"
+						: m.sender === "OPERATOR"
+							? "justify-end"
+							: "justify-start";
+					const bubble = isSystem
+						? "max-w-[95%] rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-center text-(--text-1)"
+						: m.sender === "OPERATOR"
+							? "max-w-[80%] rounded-2xl border border-white/10 bg-forest-dark px-4 py-3 text-white"
+							: "card max-w-[80%] rounded-2xl border px-4 py-3 text-(--text-1)";
+					const timeClass = isSystem
+						? "mt-1 font-sans text-[10px] text-(--text-2)"
+						: m.sender === "OPERATOR"
+							? "mt-1 font-sans text-[10px] text-white/70"
+							: "mt-1 font-sans text-[10px] text-(--text-2)";
+
+					return (
+						<div className={`flex ${align}`} key={m.id}>
+							<div className={bubble}>
+								{isSystem ? (
+									<p className="font-sans text-sm text-(--text-2)">
+										{m.body}
+									</p>
+								) : (
+									<p className="font-sans font-semibold text-sm">{m.body}</p>
+								)}
+								<p className={timeClass}>{formatDateTime(m.createdAt)}</p>
+							</div>
 						</div>
-					</div>
-				))}
+					);
+				})}
 			</div>
 		);
 	}

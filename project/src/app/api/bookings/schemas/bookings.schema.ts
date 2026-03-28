@@ -64,8 +64,21 @@ export const markDepositSchema = z.object({
 });
 export type MarkDepositInput = z.infer<typeof markDepositSchema>;
 
-export const bookingMessageSenderSchema = z.enum(["CUSTOMER", "OPERATOR"]);
+export const bookingMessageSenderSchema = z.enum([
+	"CUSTOMER",
+	"OPERATOR",
+	"SYSTEM",
+]);
 export type BookingMessageSender = z.infer<typeof bookingMessageSenderSchema>;
+
+export const bookingMessageTypeSchema = z.enum([
+	"TEXT",
+	"SYSTEM",
+	"PROPOSAL",
+	"REQUEST_INFO",
+	"LOGISTICS",
+]);
+export type BookingMessageType = z.infer<typeof bookingMessageTypeSchema>;
 
 export const sendBookingMessageSchema = z.object({
 	bookingId: z.string().min(1, "Booking ID is required"),
@@ -134,7 +147,9 @@ export type BookingInboxRow = {
 export type BookingMessageRow = {
 	id: string;
 	sender: BookingMessageSender;
+	type: BookingMessageType;
 	body: string;
+	metadata: Prisma.JsonValue | null;
 	createdAt: Date;
 };
 
