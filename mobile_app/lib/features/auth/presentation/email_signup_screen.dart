@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/auth/auth_orchestrator.dart';
+import '../../../core/auth/auth_session_controller.dart';
 import '../../../core/state/launch_providers.dart';
 import '../../../core/widgets/app_brand_logo.dart';
 
@@ -32,8 +32,7 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
-      final result = await ref.read(authOrchestratorProvider).signUpWithEmail(
-            launch: ref.read(launchControllerProvider),
+      final result = await ref.read(authSessionControllerProvider).signUpWithEmail(
             name: _name.text.trim(),
             email: _email.text.trim(),
             password: _password.text,

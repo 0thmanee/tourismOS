@@ -31,16 +31,14 @@ class _MoroccoExperiencesAppState extends ConsumerState<MoroccoExperiencesApp> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(authOrchestratorProvider).bootstrap(
-            ref.read(launchControllerProvider),
-          );
+      ref.read(authSessionControllerProvider).bootstrap();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final launch = ref.read(launchControllerProvider);
-    final auth = ref.read(authOrchestratorProvider);
+    final auth = ref.read(authSessionControllerProvider);
     _router ??= createAppRouter(launch, auth);
 
     return MaterialApp.router(

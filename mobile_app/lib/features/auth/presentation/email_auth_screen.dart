@@ -30,8 +30,7 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
-      await ref.read(authOrchestratorProvider).signInWithEmail(
-            launch: ref.read(launchControllerProvider),
+      await ref.read(authSessionControllerProvider).signInWithEmail(
             email: _email.text.trim(),
             password: _password.text,
           );

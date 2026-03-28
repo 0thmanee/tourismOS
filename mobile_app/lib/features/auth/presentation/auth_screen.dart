@@ -68,9 +68,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   Future<void> _google() async {
     _startLoading(_AuthProvider.google);
     try {
-      await ref.read(authOrchestratorProvider).signInWithGoogle(
-            ref.read(launchControllerProvider),
-          );
+      await ref.read(authSessionControllerProvider).signInWithGoogle();
       await _afterAuthSuccess();
     } on Exception catch (e) {
       if (!mounted) return;

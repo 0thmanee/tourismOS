@@ -1,8 +1,10 @@
+import 'package:better_auth_flutter/better_auth_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/config/app_env.dart';
+import '../../../core/state/launch_providers.dart';
 import '../../../core/widgets/app_main_app_bar.dart';
 import '../../../core/widgets/catalog_image.dart';
 import '../state/booking_messages_provider.dart';
@@ -657,6 +659,51 @@ class _UpdatesAndMessagesSectionState
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(authSessionControllerProvider);
+    final token = BetterAuth.instance.client.session?.token ?? '';
+    if (token.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 14),
+          Text(
+            'Updates & messages',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Sign in to see updates from your host and send replies.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                FilledButton.tonal(
+                  onPressed: () => context.go('/auth'),
+                  child: const Text('Sign in'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     final async = ref.watch(bookingMessagesProvider(widget.bookingId));
     final cs = Theme.of(context).colorScheme;
 

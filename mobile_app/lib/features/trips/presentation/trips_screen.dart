@@ -85,7 +85,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
   @override
   Widget build(BuildContext context) {
     final ref = this.ref;
-    ref.watch(authOrchestratorProvider);
+    ref.watch(authSessionControllerProvider);
     ref.watch(launchControllerProvider);
 
     ref.listen<AuthOrchestrator>(authOrchestratorProvider, (prev, next) {

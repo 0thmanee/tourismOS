@@ -1,22 +1,37 @@
 import 'package:better_auth_flutter/better_auth_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../config/app_env.dart';
 import '../state/launch_controller.dart';
-import 'better_auth_session.dart';
+import '../state/launch_controller_provider.dart';
+import 'better_auth_sync.dart';
 
 enum EmailSignupResult { signedIn, verificationRequired }
+
 enum AuthStatus { unknown, unauthenticated, guest, authenticated }
 
-class AuthOrchestrator extends ChangeNotifier {
+/// Single place for **auth session** lifecycle: bootstrap, sign-in/out, guest, and prefs sync.
+///
+/// Reads [LaunchController] via [Ref] so call sites do not pass `launch` into every method.
+/// Better Auth client + Dio still use [BetterAuth.instance] for transport; this class owns
+/// **routing-relevant** [AuthStatus] and coordinates SharedPreferences flags.
+class AuthSessionController extends ChangeNotifier {
+  AuthSessionController(this._ref);
+
+  final Ref _ref;
+
+  LaunchController get _launch => _ref.read(launchControllerProvider);
+
   bool _isLoading = false;
   String? _error;
   bool _isBootstrapping = false;
   bool _hasCheckedSession = false;
   AuthStatus _authStatus = AuthStatus.unknown;
+  Future<void>? _bootstrapInFlight;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -41,16 +56,15 @@ class AuthOrchestrator extends ChangeNotifier {
     throw Exception(message);
   }
 
-  Future<void> _completeAuth(LaunchController launch) async {
-    await launch.setSessionReady(guest: false);
+  Future<void> _completeSignIn() async {
+    await _launch.setSessionReady(guest: false);
     await refreshBetterAuthClientSession();
-    await syncLaunchSessionFromBetterAuth(launch);
-    if (!launch.sessionReady || launch.isGuest) {
-      // Guard against transient post-login propagation delays.
+    await applyLaunchPrefsFromBetterAuth(_launch);
+    if (!_launch.sessionReady || _launch.isGuest) {
       await Future<void>.delayed(const Duration(milliseconds: 250));
       await refreshBetterAuthClientSession();
-      await syncLaunchSessionFromBetterAuth(launch);
-      if (!launch.sessionReady || launch.isGuest) {
+      await applyLaunchPrefsFromBetterAuth(_launch);
+      if (!_launch.sessionReady || _launch.isGuest) {
         _fail('Signed in, but failed to verify active session.');
       }
     }
@@ -58,21 +72,28 @@ class AuthOrchestrator extends ChangeNotifier {
     _setStatus(AuthStatus.authenticated);
   }
 
-  Future<void> bootstrap(LaunchController launch) async {
-    if (_isBootstrapping) return;
+  /// Idempotent cold start / splash: safe to await from multiple callers.
+  Future<void> bootstrap() {
+    _bootstrapInFlight ??= _runBootstrap().whenComplete(() {
+      _bootstrapInFlight = null;
+    });
+    return _bootstrapInFlight!;
+  }
+
+  Future<void> _runBootstrap() async {
     _isBootstrapping = true;
     notifyListeners();
     try {
-      await launch.load();
-      if (launch.isGuest) {
+      await _launch.load();
+      if (_launch.isGuest) {
         _hasCheckedSession = true;
         _setStatus(AuthStatus.guest);
         return;
       }
-      // Always attempt real session discovery (cookie jar / persisted BetterAuth session),
-      // even if local flags were cleared.
-      await syncLaunchSessionFromBetterAuth(launch);
-      if (launch.sessionReady && !launch.isGuest && BetterAuth.instance.client.user != null) {
+      await applyLaunchPrefsFromBetterAuth(_launch);
+      if (_launch.sessionReady &&
+          !_launch.isGuest &&
+          BetterAuth.instance.client.user != null) {
         _hasCheckedSession = true;
         _setStatus(AuthStatus.authenticated);
       } else {
@@ -80,7 +101,6 @@ class AuthOrchestrator extends ChangeNotifier {
         _setStatus(AuthStatus.unauthenticated);
       }
     } catch (e) {
-      // Never allow bootstrap errors to pin the router on /splash.
       _error = e.toString();
       _hasCheckedSession = true;
       _setStatus(AuthStatus.unauthenticated);
@@ -90,19 +110,21 @@ class AuthOrchestrator extends ChangeNotifier {
     }
   }
 
-  Future<void> syncSession(LaunchController launch) async {
+  /// Reconcile prefs + client after profile / password updates.
+  Future<void> syncSession() async {
     _setLoading(true);
     _error = null;
     try {
-      await syncLaunchSessionFromBetterAuth(launch);
+      await applyLaunchPrefsFromBetterAuth(_launch);
       _hasCheckedSession = true;
-      final hasToken = (BetterAuth.instance.client.session?.token ?? '').isNotEmpty;
-      if (launch.sessionReady &&
-          !launch.isGuest &&
+      final hasToken =
+          (BetterAuth.instance.client.session?.token ?? '').isNotEmpty;
+      if (_launch.sessionReady &&
+          !_launch.isGuest &&
           hasToken &&
           BetterAuth.instance.client.user != null) {
         _setStatus(AuthStatus.authenticated);
-      } else if (launch.isGuest) {
+      } else if (_launch.isGuest) {
         _setStatus(AuthStatus.guest);
       } else {
         _setStatus(AuthStatus.unauthenticated);
@@ -112,14 +134,13 @@ class AuthOrchestrator extends ChangeNotifier {
     }
   }
 
-  Future<void> continueAsGuest(LaunchController launch) async {
+  Future<void> continueAsGuest() async {
     _setLoading(true);
     _error = null;
     try {
-      // Guest must be a hard boundary: no leftover authenticated session/token.
       BetterAuth.instance.client.session = null;
       BetterAuth.instance.client.user = null;
-      await launch.setSessionReady(guest: true);
+      await _launch.setSessionReady(guest: true);
       _hasCheckedSession = true;
       _setStatus(AuthStatus.guest);
     } finally {
@@ -128,27 +149,26 @@ class AuthOrchestrator extends ChangeNotifier {
   }
 
   Future<void> signInWithEmail({
-    required LaunchController launch,
     required String email,
     required String password,
   }) async {
     _setLoading(true);
     _error = null;
     try {
-      final (user, err) = await BetterAuth.instance.client.signInWithEmailAndPassword(
+      final (user, err) =
+          await BetterAuth.instance.client.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       if (err != null) _fail(err.message);
       if (user == null) _fail('Sign in failed.');
-      await _completeAuth(launch);
+      await _completeSignIn();
     } finally {
       _setLoading(false);
     }
   }
 
   Future<EmailSignupResult> signUpWithEmail({
-    required LaunchController launch,
     required String name,
     required String email,
     required String password,
@@ -156,7 +176,8 @@ class AuthOrchestrator extends ChangeNotifier {
     _setLoading(true);
     _error = null;
     try {
-      final (_, err) = await BetterAuth.instance.client.signUpWithEmailAndPassword(
+      final (_, err) =
+          await BetterAuth.instance.client.signUpWithEmailAndPassword(
         email: email,
         password: password,
         name: name,
@@ -171,14 +192,14 @@ class AuthOrchestrator extends ChangeNotifier {
       final (session, user) = pair;
       BetterAuth.instance.client.session = session;
       BetterAuth.instance.client.user = user;
-      await _completeAuth(launch);
+      await _completeSignIn();
       return EmailSignupResult.signedIn;
     } finally {
       _setLoading(false);
     }
   }
 
-  Future<void> signInWithGoogle(LaunchController launch) async {
+  Future<void> signInWithGoogle() async {
     if (AppEnv.googleServerClientId.isEmpty) {
       _fail('Add GOOGLE_SERVER_CLIENT_ID (web OAuth client) via --dart-define.');
     }
@@ -204,11 +225,12 @@ class AuthOrchestrator extends ChangeNotifier {
         accessToken: accessToken,
       );
       if (err != null) _fail(err.message);
-      await _completeAuth(launch);
+      await _completeSignIn();
     } on PlatformException catch (e) {
       final code = e.code.toLowerCase();
       final message = (e.message ?? '').toLowerCase();
-      final isNetworkIssue = code.contains('network_error') || message.contains('network');
+      final isNetworkIssue =
+          code.contains('network_error') || message.contains('network');
       final isConfigIssue = code.contains('10') ||
           code.contains('sign_in_failed') ||
           message.contains('developer_error') ||
@@ -231,7 +253,7 @@ class AuthOrchestrator extends ChangeNotifier {
     }
   }
 
-  Future<void> signInWithApple(LaunchController launch) async {
+  Future<void> signInWithApple() async {
     _setLoading(true);
     _error = null;
     try {
@@ -252,17 +274,17 @@ class AuthOrchestrator extends ChangeNotifier {
         accessToken: code,
       );
       if (err != null) _fail(err.message);
-      await _completeAuth(launch);
+      await _completeSignIn();
     } finally {
       _setLoading(false);
     }
   }
 
-  Future<void> signOutAll(LaunchController launch) async {
+  Future<void> signOutAll() async {
     _setLoading(true);
     _error = null;
     try {
-      await signOutAndWipeEverything(launch);
+      await signOutAndWipeEverything(_launch);
       try {
         await GoogleSignIn().disconnect();
       } catch (_) {}

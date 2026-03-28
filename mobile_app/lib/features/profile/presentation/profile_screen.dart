@@ -31,7 +31,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (!launch.sessionReady || launch.isGuest) return;
     setState(() => _refreshing = true);
     try {
-      await ref.read(authOrchestratorProvider).syncSession(launch);
+      await ref.read(authSessionControllerProvider).syncSession();
     } finally {
       if (mounted) {
         setState(() => _refreshing = false);
@@ -41,7 +41,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _signOut() async {
     final launch = ref.read(launchControllerProvider);
-    await ref.read(authOrchestratorProvider).signOutAll(launch);
+    await ref.read(authSessionControllerProvider).signOutAll();
     clearTripsLocalCache(ref);
     if (mounted) context.go('/splash');
   }
@@ -130,9 +130,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             name: name,
             image: image,
           );
-      await ref
-          .read(authOrchestratorProvider)
-          .syncSession(ref.read(launchControllerProvider));
+      await ref.read(authSessionControllerProvider).syncSession();
       if (mounted) {
         setState(() {});
         ScaffoldMessenger.of(context).showSnackBar(
@@ -243,9 +241,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             currentPassword: cur,
             newPassword: nw,
           );
-      await ref
-          .read(authOrchestratorProvider)
-          .syncSession(ref.read(launchControllerProvider));
+      await ref.read(authSessionControllerProvider).syncSession();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Password updated')),

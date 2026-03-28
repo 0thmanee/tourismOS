@@ -1,16 +1,18 @@
 import 'package:better_auth_flutter/better_auth_flutter.dart';
 
-import 'auth_backend_api.dart';
 import '../state/launch_controller.dart';
+import 'auth_backend_api.dart';
 
 DateTime _parseDateTime(dynamic value) {
   if (value is String) return DateTime.parse(value);
   if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
-  if (value is double) return DateTime.fromMillisecondsSinceEpoch(value.toInt());
+  if (value is double) {
+    return DateTime.fromMillisecondsSinceEpoch(value.toInt());
+  }
   throw const FormatException('Invalid datetime value');
 }
 
-Future<(Session, User)?> _fallbackHydrateSessionFromRawApi() async {
+Future<(Session, User)?> _hydrateSessionFromRawGetSession() async {
   try {
     final (result, error) = await Api.sendRequest(
       AppEndpoints.getSession,
@@ -19,7 +21,8 @@ Future<(Session, User)?> _fallbackHydrateSessionFromRawApi() async {
     if (error != null || result is! Map<String, dynamic>) return null;
     final sessionRaw = result['session'];
     final userRaw = result['user'];
-    if (sessionRaw is! Map<String, dynamic> || userRaw is! Map<String, dynamic>) {
+    if (sessionRaw is! Map<String, dynamic> ||
+        userRaw is! Map<String, dynamic>) {
       return null;
     }
 
@@ -55,12 +58,21 @@ Future<(Session, User)?> _fallbackHydrateSessionFromRawApi() async {
   }
 }
 
-Future<void> refreshBetterAuthClientSession() async {
+/// Serialize concurrent session refreshes (401 storms, parallel widgets).
+Future<void>? _refreshInFlight;
+
+/// Reloads [BetterAuth.instance.client] from the SDK, then from raw `/get-session` if needed.
+Future<void> refreshBetterAuthClientSession() {
+  _refreshInFlight ??= _runRefresh().whenComplete(() => _refreshInFlight = null);
+  return _refreshInFlight!;
+}
+
+Future<void> _runRefresh() async {
   final (pair, failure) = await BetterAuth.instance.client.getSession();
   if (failure != null || pair == null) {
-    final fallbackPair = await _fallbackHydrateSessionFromRawApi();
-    if (fallbackPair != null) {
-      final (session, user) = fallbackPair;
+    final fallback = await _hydrateSessionFromRawGetSession();
+    if (fallback != null) {
+      final (session, user) = fallback;
       BetterAuth.instance.client.session = session;
       BetterAuth.instance.client.user = user;
       return;
@@ -74,14 +86,14 @@ Future<void> refreshBetterAuthClientSession() async {
   BetterAuth.instance.client.user = user;
 }
 
-/// Maps a persisted Better Auth cookie/session into our local entry-flow flags.
-Future<void> syncLaunchSessionFromBetterAuth(LaunchController launch) async {
+/// Aligns SharedPreferences session flags with the current Better Auth client state.
+Future<void> applyLaunchPrefsFromBetterAuth(LaunchController launch) async {
   final (pair, failure) = await BetterAuth.instance.client.getSession();
   var resolvedPair = pair;
   if (failure != null || pair == null || pair.$2 == null) {
-    final fallbackPair = await _fallbackHydrateSessionFromRawApi();
-    if (fallbackPair != null) {
-      resolvedPair = fallbackPair;
+    final fallback = await _hydrateSessionFromRawGetSession();
+    if (fallback != null) {
+      resolvedPair = fallback;
     }
   }
 

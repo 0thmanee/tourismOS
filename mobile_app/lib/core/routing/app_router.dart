@@ -18,7 +18,7 @@ import '../../features/profile/presentation/support_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/trips/presentation/trips_screen.dart';
 import '../../features/trips/presentation/trip_detail_screen.dart';
-import '../auth/auth_orchestrator.dart';
+import '../auth/auth_session_controller.dart';
 import '../state/launch_controller.dart';
 
 /// Single [GoRouter] instance for the whole app — create once (e.g. in [main.dart]).
@@ -32,12 +32,12 @@ class _RouterRefresh extends ChangeNotifier {
   }
 
   final LaunchController launch;
-  final AuthOrchestrator auth;
+  final AuthSessionController auth;
 
   void _notify() => notifyListeners();
 }
 
-GoRouter createAppRouter(LaunchController launch, AuthOrchestrator auth) {
+GoRouter createAppRouter(LaunchController launch, AuthSessionController auth) {
   Uri? pendingAfterBootstrap;
   return GoRouter(
     initialLocation: '/splash',

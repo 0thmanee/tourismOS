@@ -40,9 +40,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _continue() async {
-    await ref.read(authOrchestratorProvider).bootstrap(
-          ref.read(launchControllerProvider),
-        );
+    await ref.read(authSessionControllerProvider).bootstrap();
     if (!mounted) return;
     // Router redirect decides destination from one resolved auth state.
     context.go('/splash');
