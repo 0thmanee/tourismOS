@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/state/launch_providers.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_brand_logo.dart';
 
 /// Onboarding: 3 value slides + optional personalization (interests, language, city).
 ///
@@ -97,17 +98,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: _onSkip,
-                style: TextButton.styleFrom(
-                  textStyle: theme.textTheme.labelLarge?.copyWith(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 4, 0),
+              child: Row(
+                children: [
+                  const AppBrandLogo(height: 38),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: _onSkip,
+                    style: TextButton.styleFrom(
+                      textStyle: theme.textTheme.labelLarge?.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    child: const Text('Skip'),
                   ),
-                ),
-                child: const Text('Skip'),
+                ],
               ),
             ),
             Expanded(

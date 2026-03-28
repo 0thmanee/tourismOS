@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/config/app_env.dart';
 import '../../../core/data/app_mock_data.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_main_app_bar.dart';
 import '../../../core/widgets/catalog_image.dart';
 import '../../../core/widgets/catalog_operator_row.dart';
 import '../../experiences/data/experience_mock_mapper.dart';
@@ -82,7 +83,9 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     final saved = _resolveSaved(savedIds);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Saved experiences')),
+      appBar: AppMainAppBar(
+        title: const Text('Saved experiences'),
+      ),
       body: SafeArea(
         child: showSkeleton
             ? const _FavoritesLoadingView()

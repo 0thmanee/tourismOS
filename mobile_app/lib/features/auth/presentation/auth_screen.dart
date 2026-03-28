@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/data/app_mock_data.dart';
 import '../../../core/state/launch_providers.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_brand_logo.dart';
 
 /// Auth entry: social + email + guest. Guest must stay visible (conversion).
 ///
@@ -140,7 +141,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 children: [
                   const SizedBox(height: 24),
-                  Icon(Icons.explore_rounded, size: 56, color: AppTokens.brandAccent),
+                  const AppBrandLogo(height: 56),
                   const SizedBox(height: 16),
                   Text(
                     'Welcome to ${AppMockData.appBrandName}',

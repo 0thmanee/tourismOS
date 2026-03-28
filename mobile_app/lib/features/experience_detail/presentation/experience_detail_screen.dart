@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_main_app_bar.dart';
 import '../../../core/widgets/catalog_image.dart';
 import '../../experiences/domain/experience.dart';
 import '../../experiences/state/catalog_providers.dart';
@@ -27,19 +28,10 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
 
     return asyncExp.when(
       loading: () => Scaffold(
-        appBar: AppBar(
+        appBar: AppMainAppBar(
           title: const Text('Experience'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            tooltip: 'Back',
-            onPressed: () {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go('/app/home');
-              }
-            },
-          ),
+          showBack: true,
+          onBackFallback: () => context.go('/app/home'),
         ),
         body: const Center(child: CircularProgressIndicator()),
       ),
@@ -127,6 +119,7 @@ class _ExperienceDetailScreenState extends ConsumerState<ExperienceDetailScreen>
                 color: isSaved ? AppTokens.brandAccent : Colors.white,
                 tooltip: isSaved ? 'Unsave' : 'Save',
               ),
+              const AppProfileAvatarButton(),
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
@@ -518,13 +511,10 @@ class _DetailStateScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppMainAppBar(
         title: const Text('Experience'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          tooltip: 'Back',
-          onPressed: onSecondary ?? onPrimary,
-        ),
+        showBack: true,
+        onBackPressed: onSecondary ?? onPrimary,
       ),
       body: Center(
         child: Padding(

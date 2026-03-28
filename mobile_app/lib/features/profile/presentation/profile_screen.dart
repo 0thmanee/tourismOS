@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/better_auth_user_api.dart';
 import '../../../core/state/launch_controller.dart';
 import '../../../core/state/launch_providers.dart';
+import '../../../core/widgets/app_main_app_bar.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -264,8 +265,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final signedIn = launch.sessionReady && !launch.isGuest && user != null;
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppMainAppBar(
         title: const Text('Profile'),
+        showBack: false,
         actions: [
           if (signedIn)
             IconButton(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/state/launch_providers.dart';
+import '../../../core/widgets/app_brand_logo.dart';
 
 /// Email sign-in (stub). Validates lightly; real API later.
 class EmailAuthScreen extends ConsumerStatefulWidget {
@@ -49,13 +50,17 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign in')),
+      appBar: AppBar(
+        title: const Text('Sign in'),
+      ),
       body: SafeArea(
         child: Form(
           key: _formKey,
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: [
+              const Center(child: AppBrandLogo(height: 48)),
+              const SizedBox(height: 24),
               TextFormField(
                 controller: _email,
                 keyboardType: TextInputType.emailAddress,

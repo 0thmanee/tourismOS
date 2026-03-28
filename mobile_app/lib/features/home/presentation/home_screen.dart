@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/config/app_env.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_main_app_bar.dart';
 import '../../experiences/data/experience_mock_mapper.dart';
 import '../../experiences/domain/experience.dart';
 import '../../experiences/state/catalog_helpers.dart';
@@ -73,9 +74,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final hasContent = featured.isNotEmpty;
 
     return Scaffold(
-      body: SafeArea(
-        child: Builder(
-          builder: (context) {
+      appBar: AppMainAppBar(
+        title: const Text('Home'),
+        showBack: false,
+      ),
+      body: Builder(
+        builder: (context) {
             final savedIds = ref.watch(favoritesStoreProvider);
             final savedItems = _allHomeExperiences()
                 .where((e) => savedIds.contains(e.id))
@@ -524,8 +528,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SliverToBoxAdapter(child: SizedBox(height: 32)),
           ],
         );
-          },
-        ),
+        },
       ),
     );
   }

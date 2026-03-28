@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/data/app_mock_data.dart';
 import '../../../core/state/launch_providers.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_brand_logo.dart';
 
 // TODO(splash): Restore optional "loading" gate on Continue once prefs + connectivity
 // are reliable in QA (e.g. disable button until `LaunchController.load()` completes, or
@@ -122,12 +123,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 10),
-                      Center(
-                        child: Icon(
-                          Icons.explore_rounded,
-                          size: 42,
-                          color: AppTokens.brandAccent,
-                        ),
+                      const Center(
+                        child: AppBrandLogo(height: 52),
                       ),
                       const SizedBox(height: 12),
                       Padding(

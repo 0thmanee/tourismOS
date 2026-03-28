@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/config/app_env.dart';
+import '../../../core/widgets/app_main_app_bar.dart';
 import '../../../core/widgets/catalog_image.dart';
 import '../state/trip_remote_providers.dart';
 import '../state/trips_store.dart';
@@ -18,17 +19,35 @@ class TripDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (AppEnv.useRemoteTrips) {
       final asyncTrip = ref.watch(tripRemoteDetailProvider(bookingId));
+      final stored = ref.watch(tripsStoreProvider);
+      Map<String, dynamic>? localTrip;
+      for (final t in stored) {
+        if ((t['bookingId'] as String?) == bookingId) {
+          localTrip = t;
+          break;
+        }
+      }
       return asyncTrip.when(
         loading: () => Scaffold(
-          appBar: AppBar(title: const Text('Trip')),
+          appBar: AppMainAppBar(
+            title: const Text('Trip'),
+            showBack: true,
+            onBackFallback: () => context.go('/app/trips'),
+          ),
           body: const Center(child: CircularProgressIndicator()),
         ),
-        error: (_, __) => _TripDetailStateScaffold(
-          title: 'This booking is unavailable',
-          message: 'The booking reference is invalid or no longer available.',
-          primaryLabel: 'Back to Trips',
-          onPrimary: () => context.go('/app/trips'),
-        ),
+        error: (_, __) {
+          if (localTrip != null) {
+            return _TripDetailLoadedView(trip: localTrip);
+          }
+          return _TripDetailStateScaffold(
+            title: 'This booking is unavailable',
+            message:
+                'The booking reference is invalid or no longer available.',
+            primaryLabel: 'Back to Trips',
+            onPrimary: () => context.go('/app/trips'),
+          );
+        },
         data: (trip) => _TripDetailLoadedView(trip: trip),
       );
     }
@@ -103,6 +122,9 @@ class _TripDetailLoadedView extends StatelessWidget {
                 }
               },
             ),
+            actions: [
+              const AppProfileAvatarButton(),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -294,13 +316,10 @@ class _TripDetailStateScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppMainAppBar(
         title: const Text('Trip detail'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          tooltip: 'Back',
-          onPressed: onPrimary,
-        ),
+        showBack: true,
+        onBackPressed: onPrimary,
       ),
       body: Center(
         child: Padding(

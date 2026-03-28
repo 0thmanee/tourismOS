@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/config/app_env.dart';
 import '../../../core/data/app_mock_data.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_main_app_bar.dart';
 import '../../../core/widgets/catalog_image.dart';
 import '../../../core/widgets/catalog_operator_row.dart';
 import '../../experiences/domain/experience.dart';
@@ -81,8 +82,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     final showSkeleton = remoteLoading || (!AppEnv.useRemoteCatalog && _isInitialLoading);
 
     return Scaffold(
-          appBar: AppBar(
+          appBar: AppMainAppBar(
             title: const Text('Explore'),
+            showBack: false,
             actions: [
               IconButton(
                 onPressed: () => context.go('/app/explore/favorites'),

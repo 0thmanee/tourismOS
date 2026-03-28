@@ -102,6 +102,17 @@ export async function listTripsForPhoneRepo(
 	return rows.map((r) => toTripRow(r));
 }
 
+/** Aligns with mobile `normalizeB2cPhoneForApi` — compare digits when formats differ. */
+function phonesLooselyMatch(stored: string, query: string): boolean {
+	const a = stored.trim();
+	const b = query.trim();
+	if (a === b) return true;
+	const da = a.replace(/\D/g, "");
+	const db = b.replace(/\D/g, "");
+	if (da.length < 8 || db.length < 8) return false;
+	return da === db;
+}
+
 export async function getTripForPhoneRepo(
 	bookingId: string,
 	phone: string,
@@ -109,10 +120,11 @@ export async function getTripForPhoneRepo(
 	const normalized = phone.trim();
 	if (!normalized) return null;
 
+	// Load by id first, then verify phone loosely — strict Prisma filter misses
+	// equivalent numbers (spaces, +212 vs 0-prefixed local, etc.).
 	const row = await prisma.booking.findFirst({
 		where: {
 			id: bookingId,
-			customer: { phone: normalized },
 			status: { not: "CANCELLED" },
 		},
 		select: {
@@ -128,11 +140,15 @@ export async function getTripForPhoneRepo(
 			paymentStatus: true,
 			depositCents: true,
 			organization: { select: orgSelect },
+			customer: { select: { phone: true } },
 		},
 	});
 
 	if (!row) return null;
-	return toTripRow(row);
+	if (!phonesLooselyMatch(row.customer.phone, normalized)) return null;
+
+	const { customer: _c, ...rest } = row;
+	return toTripRow(rest);
 }
 
 export async function getTripRowByIdForB2c(

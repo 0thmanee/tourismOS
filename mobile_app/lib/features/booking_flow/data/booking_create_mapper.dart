@@ -54,7 +54,9 @@ Map<String, dynamic> bookingCreateRequestFromDraft({
     'priceMad': priceMad,
     'customer': customer,
     'booking': {
-      'startAtISO': startAt.toIso8601String(),
+      // API uses Zod `z.string().datetime()` — requires offset or `Z` (local
+      // `toIso8601String()` without zone is rejected).
+      'startAtISO': startAt.toUtc().toIso8601String(),
       'peopleCount': guests,
       if (meta.isNotEmpty) 'meta': meta,
     },

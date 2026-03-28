@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/config/app_env.dart';
+import '../../../core/widgets/app_main_app_bar.dart';
 import '../../experience_detail/data/experience_detail_mock.dart';
 import '../../experiences/data/experience_mock_mapper.dart';
 import '../../experiences/state/catalog_providers.dart';
@@ -21,18 +22,20 @@ class BookingFlowScreen extends ConsumerWidget {
       final async = ref.watch(experienceDetailProvider(experienceId));
       return async.when(
         loading: () => Scaffold(
-          appBar: AppBar(title: const Text('Book')),
+          appBar: AppMainAppBar(
+            title: const Text('Book'),
+            showBack: true,
+            onBackFallback: () =>
+                context.go('/app/home/experience/$experienceId'),
+          ),
           body: const Center(child: CircularProgressIndicator()),
         ),
         error: (_, __) => Scaffold(
-          appBar: AppBar(
+          appBar: AppMainAppBar(
             title: const Text('Booking'),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_rounded),
-              tooltip: 'Back',
-              onPressed: () =>
-                  context.go('/app/home/experience/$experienceId'),
-            ),
+            showBack: true,
+            onBackPressed: () =>
+                context.go('/app/home/experience/$experienceId'),
           ),
           body: Center(
             child: Padding(

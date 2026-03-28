@@ -76,7 +76,8 @@ class AppMockData {
   static const bookingDefaultDate = 'Sat, Mar 28';
   static const bookingDefaultSlot = '10:30';
   static const bookingDemoTravelerName = 'Othmane A.';
-  static const bookingDemoTravelerPhone = '+212 6XX XX XX XX';
+  /// Valid E.164-style placeholder for API `phone` query (min length / digit rules).
+  static const bookingDemoTravelerPhone = '+212612345678';
   static const bookingDemoTravelerEmail = 'traveler@example.com';
 
   static const hero = <String, dynamic>{

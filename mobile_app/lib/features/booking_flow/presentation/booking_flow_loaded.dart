@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/config/app_env.dart';
 import '../../../core/data/app_mock_data.dart';
+import '../../../core/widgets/app_main_app_bar.dart';
 import '../../../core/utils/b2c_phone.dart';
 import '../../../core/utils/json_read.dart';
 import '../../experiences/domain/experience.dart';
@@ -101,14 +102,11 @@ class _BookingFlowLoadedState extends ConsumerState<BookingFlowLoaded> {
             : 'Continue';
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppMainAppBar(
         title: Text(detail['title'] as String),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          tooltip: 'Back',
-          onPressed: () => context.go(
-            '/app/home/experience/${widget.experience.id}',
-          ),
+        showBack: true,
+        onBackPressed: () => context.go(
+          '/app/home/experience/${widget.experience.id}',
         ),
       ),
       body: SafeArea(
@@ -1377,13 +1375,10 @@ class _BookingStateScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppMainAppBar(
         title: const Text('Booking'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          tooltip: 'Back',
-          onPressed: onPrimary,
-        ),
+        showBack: true,
+        onBackPressed: onPrimary,
       ),
       body: Center(
         child: Padding(

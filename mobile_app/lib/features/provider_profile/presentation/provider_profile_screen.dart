@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_main_app_bar.dart';
 import '../../../core/widgets/catalog_image.dart';
 import '../../experiences/domain/experience.dart';
 import '../../experiences/state/catalog_providers.dart';
@@ -19,11 +20,19 @@ class ProviderProfileScreen extends ConsumerWidget {
 
     return asyncCatalog.when(
       loading: () => Scaffold(
-        appBar: AppBar(title: const Text('Host')),
+        appBar: AppMainAppBar(
+          title: const Text('Host'),
+          showBack: true,
+          onBackFallback: () => context.go('/app/explore'),
+        ),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (_, __) => Scaffold(
-        appBar: AppBar(title: const Text('Host')),
+        appBar: AppMainAppBar(
+          title: const Text('Host'),
+          showBack: true,
+          onBackFallback: () => context.go('/app/explore'),
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -50,18 +59,10 @@ class ProviderProfileScreen extends ConsumerWidget {
             .toList();
         if (items.isEmpty) {
           return Scaffold(
-            appBar: AppBar(
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_rounded),
-                onPressed: () {
-                  if (context.canPop()) {
-                    context.pop();
-                  } else {
-                    context.go('/app/explore');
-                  }
-                },
-              ),
+            appBar: AppMainAppBar(
               title: const Text('Host'),
+              showBack: true,
+              onBackFallback: () => context.go('/app/explore'),
             ),
             body: Center(
               child: Padding(
@@ -100,18 +101,13 @@ class _ProviderProfileBody extends StatelessWidget {
       ..sort();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(name),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/app/explore');
-            }
-          },
+      appBar: AppMainAppBar(
+        title: Text(
+          name,
+          overflow: TextOverflow.ellipsis,
         ),
+        showBack: true,
+        onBackFallback: () => context.go('/app/explore'),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),

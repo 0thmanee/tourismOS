@@ -1,8 +1,12 @@
+import 'package:better_auth_flutter/better_auth_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/auth/auth_orchestrator.dart';
 import '../../../core/config/app_env.dart';
+import '../../../core/state/launch_providers.dart';
+import '../../../core/widgets/app_main_app_bar.dart';
 import '../../../core/widgets/catalog_image.dart';
 import '../data/trip_dto_mapper.dart';
 import '../state/bookings_providers.dart';
@@ -23,11 +27,24 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
   bool _isInitialLoading = true;
   bool _remoteTripsFailed = false;
 
+  /// Server `/v1/trips` requires a session + Bearer token.
+  bool _canSyncRemoteTrips() {
+    if (!AppEnv.useRemoteTrips) return false;
+    final launch = ref.read(launchControllerProvider);
+    if (!launch.sessionReady || launch.isGuest) return false;
+    final token = BetterAuth.instance.client.session?.token;
+    return token != null && token.isNotEmpty;
+  }
+
   @override
   void initState() {
     super.initState();
     if (AppEnv.useRemoteTrips) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_canSyncRemoteTrips()) {
+          if (mounted) setState(() => _isInitialLoading = false);
+          return;
+        }
         _loadRemoteTrips();
       });
     } else {
@@ -39,6 +56,15 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
   }
 
   Future<void> _loadRemoteTrips() async {
+    if (!_canSyncRemoteTrips()) {
+      if (mounted) {
+        setState(() {
+          _remoteTripsFailed = false;
+          _isInitialLoading = false;
+        });
+      }
+      return;
+    }
     if (mounted) setState(() => _remoteTripsFailed = false);
     try {
       final phone = resolveB2cTripsPhoneFromSaved(
@@ -59,7 +85,19 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
   @override
   Widget build(BuildContext context) {
     final ref = this.ref;
+    ref.watch(authOrchestratorProvider);
+    ref.watch(launchControllerProvider);
+
+    ref.listen<AuthOrchestrator>(authOrchestratorProvider, (prev, next) {
+      if (!AppEnv.useRemoteTrips) return;
+      if (next.authStatus != AuthStatus.authenticated) return;
+      if (prev == null) return;
+      if (prev.authStatus == AuthStatus.authenticated) return;
+      _loadRemoteTrips();
+    });
+
     final usingRemote = AppEnv.useRemoteTrips;
+    final canSyncRemote = _canSyncRemoteTrips();
     final storedTrips = ref.watch(tripsStoreProvider);
     final trips = usingRemote
         ? storedTrips
@@ -85,13 +123,22 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
     final pending = trips.where((t) => (t['status'] as String?) == 'Pending').toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My Trips')),
+      appBar: AppMainAppBar(
+        title: const Text('My Trips'),
+        showBack: false,
+      ),
       body: SafeArea(
         child: _isInitialLoading
             ? const _TripsLoadingView()
-            : ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-          children: [
+            : RefreshIndicator(
+                onRefresh: () async {
+                  if (!usingRemote || !canSyncRemote) return;
+                  await _loadRemoteTrips();
+                },
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                  children: [
             Text(
               'Your travel plans',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -107,7 +154,38 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
                     fontWeight: FontWeight.w600,
                   ),
             ),
-            if (usingRemote && _remoteTripsFailed) ...[
+            if (usingRemote && !canSyncRemote) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.lock_outline_rounded,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Sign in to load your bookings from the server.',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => context.go('/auth'),
+                      child: const Text('Sign in'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (usingRemote && canSyncRemote && _remoteTripsFailed) ...[
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -117,18 +195,29 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.cloud_off_rounded,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.onErrorContainer),
+                    Icon(
+                      Icons.cloud_off_rounded,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Could not load trips. Showing offline data if available.',
+                        'Could not refresh trips. Check your connection and try again.',
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
                               color: Theme.of(context)
                                   .colorScheme
                                   .onErrorContainer,
                             ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _loadRemoteTrips,
+                      child: Text(
+                        'Retry',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
                       ),
                     ),
                   ],
@@ -247,7 +336,8 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
               ),
             ],
           ],
-        ),
+                ),
+              ),
       ),
     );
   }

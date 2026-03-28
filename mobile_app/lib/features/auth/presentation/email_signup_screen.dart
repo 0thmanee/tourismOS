@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/auth_orchestrator.dart';
 import '../../../core/state/launch_providers.dart';
+import '../../../core/widgets/app_brand_logo.dart';
 
 class EmailSignupScreen extends ConsumerStatefulWidget {
   const EmailSignupScreen({super.key});
@@ -63,13 +64,17 @@ class _EmailSignupScreenState extends ConsumerState<EmailSignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create account')),
+      appBar: AppBar(
+        title: const Text('Create account'),
+      ),
       body: SafeArea(
         child: Form(
           key: _formKey,
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: [
+              const Center(child: AppBrandLogo(height: 48)),
+              const SizedBox(height: 24),
               TextFormField(
                 controller: _name,
                 decoration: const InputDecoration(

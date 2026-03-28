@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/data/app_mock_data.dart';
 import '../../../core/utils/try_launch_url.dart';
+import '../../../core/widgets/app_main_app_bar.dart';
 
 class SupportScreen extends StatelessWidget {
   const SupportScreen({super.key});
@@ -10,7 +11,9 @@ class SupportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Help & Support')),
+      appBar: AppMainAppBar(
+        title: const Text('Help & Support'),
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
         children: [

@@ -46,7 +46,13 @@ class AuthOrchestrator extends ChangeNotifier {
     await refreshBetterAuthClientSession();
     await syncLaunchSessionFromBetterAuth(launch);
     if (!launch.sessionReady || launch.isGuest) {
-      _fail('Signed in, but failed to verify active session.');
+      // Guard against transient post-login propagation delays.
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      await refreshBetterAuthClientSession();
+      await syncLaunchSessionFromBetterAuth(launch);
+      if (!launch.sessionReady || launch.isGuest) {
+        _fail('Signed in, but failed to verify active session.');
+      }
     }
     _hasCheckedSession = true;
     _setStatus(AuthStatus.authenticated);
