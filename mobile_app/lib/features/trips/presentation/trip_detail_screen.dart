@@ -637,7 +637,7 @@ class _UpdatesAndMessagesSectionState
     setState(() => _sending = true);
     try {
       final phone =
-          resolveB2cTripsPhoneFromSaved(ref.read(b2cTravelerPhoneProvider));
+          b2cTripsPhoneQueryHint(ref.read(b2cTravelerPhoneProvider));
       await ref.read(bookingsApiProvider).postBookingMessage(
             bookingId: widget.bookingId,
             phone: phone,

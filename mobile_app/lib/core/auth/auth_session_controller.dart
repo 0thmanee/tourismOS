@@ -8,6 +8,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../config/app_env.dart';
 import '../state/launch_controller.dart';
 import '../state/launch_controller_provider.dart';
+import 'better_auth_native_sign_in.dart';
 import 'better_auth_sync.dart';
 
 enum EmailSignupResult { signedIn, verificationRequired }
@@ -56,12 +57,31 @@ class AuthSessionController extends ChangeNotifier {
     throw Exception(message);
   }
 
+  /// Prefs say “not in app” but in-memory [AuthStatus] still says guest/authenticated —
+  /// common after hot reload or dev reset that cleared prefs without touching this notifier.
+  void _healStaleAuthStatus() {
+    if (_launch.sessionReady || _launch.isGuest) return;
+    final hasClient = BetterAuth.instance.client.user != null &&
+        (BetterAuth.instance.client.session?.token ?? '').isNotEmpty;
+    if (hasClient) return;
+    if (_authStatus == AuthStatus.guest ||
+        _authStatus == AuthStatus.authenticated) {
+      _setStatus(AuthStatus.unauthenticated);
+    }
+  }
+
   Future<void> _completeSignIn() async {
-    await _launch.setSessionReady(guest: false);
+    // Let Better Auth persist cookies / client before re-querying get-session.
+    await Future<void>.delayed(const Duration(milliseconds: 200));
     await refreshBetterAuthClientSession();
     await applyLaunchPrefsFromBetterAuth(_launch);
     if (!_launch.sessionReady || _launch.isGuest) {
-      await Future<void>.delayed(const Duration(milliseconds: 250));
+      await Future<void>.delayed(const Duration(milliseconds: 450));
+      await refreshBetterAuthClientSession();
+      await applyLaunchPrefsFromBetterAuth(_launch);
+    }
+    if (!_launch.sessionReady || _launch.isGuest) {
+      await Future<void>.delayed(const Duration(milliseconds: 700));
       await refreshBetterAuthClientSession();
       await applyLaunchPrefsFromBetterAuth(_launch);
       if (!_launch.sessionReady || _launch.isGuest) {
@@ -85,6 +105,7 @@ class AuthSessionController extends ChangeNotifier {
     notifyListeners();
     try {
       await _launch.load();
+      _healStaleAuthStatus();
       if (_launch.isGuest) {
         _hasCheckedSession = true;
         _setStatus(AuthStatus.guest);
@@ -115,6 +136,8 @@ class AuthSessionController extends ChangeNotifier {
     _setLoading(true);
     _error = null;
     try {
+      await _launch.load();
+      _healStaleAuthStatus();
       await applyLaunchPrefsFromBetterAuth(_launch);
       _hasCheckedSession = true;
       final hasToken =
@@ -155,8 +178,7 @@ class AuthSessionController extends ChangeNotifier {
     _setLoading(true);
     _error = null;
     try {
-      final (user, err) =
-          await BetterAuth.instance.client.signInWithEmailAndPassword(
+      final (user, err) = await nativeSignInWithEmail(
         email: email,
         password: password,
       );
@@ -176,22 +198,23 @@ class AuthSessionController extends ChangeNotifier {
     _setLoading(true);
     _error = null;
     try {
-      final (_, err) =
+      final (raw, err) =
           await BetterAuth.instance.client.signUpWithEmailAndPassword(
         email: email,
         password: password,
         name: name,
       );
       if (err != null) _fail(err.message);
+      if (raw == null) _fail('Sign up failed.');
 
-      final (pair, sessErr) = await BetterAuth.instance.client.getSession();
-      if (sessErr != null || pair == null || pair.$2 == null) {
+      final token = raw['token'] as String?;
+      if (token == null || token.isEmpty) {
         return EmailSignupResult.verificationRequired;
       }
 
-      final (session, user) = pair;
-      BetterAuth.instance.client.session = session;
-      BetterAuth.instance.client.user = user;
+      final (user, hErr) = await nativeHydrateAfterAuthResponse(raw);
+      if (hErr != null) _fail(hErr.message);
+      if (user == null) _fail('Sign up failed.');
       await _completeSignIn();
       return EmailSignupResult.signedIn;
     } finally {
@@ -219,7 +242,7 @@ class AuthSessionController extends ChangeNotifier {
           accessToken.isEmpty) {
         _fail('Google Sign-In did not return tokens.');
       }
-      final (_, err) = await BetterAuth.instance.client.signInWithIdToken(
+      final (_, err) = await nativeSignInWithIdToken(
         provider: SocialProvider.google,
         idToken: idToken,
         accessToken: accessToken,
@@ -268,7 +291,7 @@ class AuthSessionController extends ChangeNotifier {
       if (idToken == null || idToken.isEmpty || code.isEmpty) {
         _fail('Sign in with Apple did not return tokens.');
       }
-      final (_, err) = await BetterAuth.instance.client.signInWithIdToken(
+      final (_, err) = await nativeSignInWithIdToken(
         provider: SocialProvider.apple,
         idToken: idToken,
         accessToken: code,

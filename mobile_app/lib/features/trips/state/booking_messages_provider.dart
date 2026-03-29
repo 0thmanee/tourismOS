@@ -6,8 +6,7 @@ import 'trips_phone_provider.dart';
 final bookingMessagesProvider = FutureProvider.autoDispose
     .family<List<Map<String, dynamic>>, String>((ref, bookingId) async {
   ref.watch(b2cTravelerPhoneProvider);
-  final phone =
-      resolveB2cTripsPhoneFromSaved(ref.read(b2cTravelerPhoneProvider));
+  final phone = b2cTripsPhoneQueryHint(ref.read(b2cTravelerPhoneProvider));
   final api = ref.watch(bookingsApiProvider);
   return api.listBookingMessages(bookingId: bookingId, phone: phone);
 });

@@ -5,7 +5,7 @@ import {
 } from "~/app/api/v1/_lib/http";
 import { getV1AuthSession } from "~/app/api/v1/_lib/auth";
 import { bookingRowToTripDTO } from "~/app/api/v1/_lib/trip.mapper";
-import { listTripsForPhoneRepo } from "~/app/api/v1/bookings/repo/b2c-trips.repo";
+import { listTripsForTravelerRepo } from "~/app/api/v1/bookings/repo/b2c-trips.repo";
 import { listTripsQuerySchema } from "~/app/api/v1/trips/schemas/list-trips.query";
 import { tripRowMatchesBucket } from "~/app/api/v1/trips/trip-filters";
 
@@ -36,13 +36,13 @@ export async function GET(request: Request) {
 				request,
 				400,
 				"VALIDATION_ERROR",
-				"Query requires valid phone (and optional status)",
+				"Invalid trips query (optional phone, optional status bucket)",
 				parsed.error.flatten(),
 			);
 		}
 
 		const { phone, status } = parsed.data;
-		const rows = await listTripsForPhoneRepo(phone);
+		const rows = await listTripsForTravelerRepo(session.user.id, phone);
 		const filtered = rows.filter((r) => tripRowMatchesBucket(r, status));
 		const items = filtered.map((r) => bookingRowToTripDTO(r));
 

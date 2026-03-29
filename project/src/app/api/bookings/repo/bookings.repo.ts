@@ -163,6 +163,8 @@ export async function createBookingRepo(data: {
 	organizationId: string;
 	customerName: string;
 	customerPhone: string;
+	/** B2C traveler account that created this booking (My Trips ownership). */
+	travelerUserId?: string | null;
 	activityTitle: string;
 	activityId?: string | null;
 	activityKind?: import("@prisma/client").ActivityKind | null;
@@ -185,6 +187,9 @@ export async function createBookingRepo(data: {
 			data: {
 				organizationId: data.organizationId,
 				customerId: customer.id,
+				travelerUserId: data.travelerUserId?.trim()
+					? data.travelerUserId.trim()
+					: undefined,
 				activityId: data.activityId ?? undefined,
 				activityKind: data.activityKind ?? undefined,
 				activityTitle: data.activityTitle,

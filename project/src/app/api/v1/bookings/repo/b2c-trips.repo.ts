@@ -40,6 +40,21 @@ function mapOrg(o: {
 	};
 }
 
+const tripListSelect = {
+	id: true,
+	activityId: true,
+	activityTitle: true,
+	activityKind: true,
+	startAt: true,
+	endAt: true,
+	peopleCount: true,
+	priceCents: true,
+	status: true,
+	paymentStatus: true,
+	depositCents: true,
+	organization: { select: orgSelect },
+} as const;
+
 function toTripRow(r: {
 	id: string;
 	activityId: string | null;
@@ -83,27 +98,44 @@ export async function listTripsForPhoneRepo(
 			status: { not: "CANCELLED" },
 		},
 		orderBy: { startAt: "desc" },
-		select: {
-			id: true,
-			activityId: true,
-			activityTitle: true,
-			activityKind: true,
-			startAt: true,
-			endAt: true,
-			peopleCount: true,
-			priceCents: true,
-			status: true,
-			paymentStatus: true,
-			depositCents: true,
-			organization: { select: orgSelect },
-		},
+		select: tripListSelect,
 	});
 
 	return rows.map((r) => toTripRow(r));
 }
 
+/**
+ * Trips visible to a signed-in traveler: rows they own (`travelerUserId`) plus legacy
+ * phone-matched rows when [phone] is provided.
+ */
+export async function listTripsForTravelerRepo(
+	userId: string,
+	phone?: string | null,
+): Promise<BookingForTripRow[]> {
+	const byUserRows = await prisma.booking.findMany({
+		where: { status: { not: "CANCELLED" }, travelerUserId: userId },
+		orderBy: { startAt: "desc" },
+		select: tripListSelect,
+	});
+	const byUser = byUserRows.map((r) => toTripRow(r));
+	const normalized = phone?.trim() ?? "";
+	if (!normalized) {
+		return byUser;
+	}
+	const byPhone = await listTripsForPhoneRepo(normalized);
+	const ids = new Set(byUser.map((r) => r.id));
+	const merged = [...byUser];
+	for (const row of byPhone) {
+		if (!ids.has(row.id)) {
+			merged.push(row);
+		}
+	}
+	merged.sort((a, b) => b.startAt.getTime() - a.startAt.getTime());
+	return merged;
+}
+
 /** Aligns with mobile `normalizeB2cPhoneForApi` — compare digits when formats differ. */
-function phonesLooselyMatch(stored: string, query: string): boolean {
+export function phonesLooselyMatch(stored: string, query: string): boolean {
 	const a = stored.trim();
 	const b = query.trim();
 	if (a === b) return true;
@@ -148,6 +180,40 @@ export async function getTripForPhoneRepo(
 	if (!phonesLooselyMatch(row.customer.phone, normalized)) return null;
 
 	const { customer: _c, ...rest } = row;
+	return toTripRow(rest);
+}
+
+/** Session-scoped trip detail: traveler owns the row, or legacy phone match when unclaimed. */
+export async function getTripForTravelerRepo(
+	bookingId: string,
+	userId: string,
+	phone?: string | null,
+): Promise<BookingForTripRow | null> {
+	const row = await prisma.booking.findFirst({
+		where: {
+			id: bookingId,
+			status: { not: "CANCELLED" },
+		},
+		select: {
+			...tripListSelect,
+			travelerUserId: true,
+			customer: { select: { phone: true } },
+		},
+	});
+
+	if (!row) return null;
+
+	if (row.travelerUserId === userId) {
+		const { travelerUserId: _t, customer: _c, ...rest } = row;
+		return toTripRow(rest);
+	}
+
+	const p = phone?.trim() ?? "";
+	if (!p) return null;
+	if (row.travelerUserId != null) return null;
+	if (!phonesLooselyMatch(row.customer.phone, p)) return null;
+
+	const { travelerUserId: _t, customer: _c, ...rest } = row;
 	return toTripRow(rest);
 }
 

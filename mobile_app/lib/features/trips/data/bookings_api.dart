@@ -15,15 +15,16 @@ class BookingsApi {
   }
 
   Future<List<Map<String, dynamic>>> listTrips({
-    required String phone,
+    String? phone,
     String status = 'all',
   }) async {
+    final query = <String, dynamic>{'status': status};
+    if (phone != null && phone.isNotEmpty) {
+      query['phone'] = phone;
+    }
     final response = await _dio.get<Map<String, dynamic>>(
       '/v1/trips',
-      queryParameters: {
-        'phone': phone,
-        'status': status,
-      },
+      queryParameters: query,
     );
     final items = response.data?['items'];
     if (items is! List) return const [];
@@ -40,11 +41,15 @@ class BookingsApi {
 
   Future<Map<String, dynamic>> fetchTrip({
     required String bookingId,
-    required String phone,
+    String? phone,
   }) async {
+    final query = <String, dynamic>{};
+    if (phone != null && phone.isNotEmpty) {
+      query['phone'] = phone;
+    }
     final response = await _dio.get<Map<String, dynamic>>(
       '/v1/trips/$bookingId',
-      queryParameters: {'phone': phone},
+      queryParameters: query,
     );
     final item = response.data?['item'];
     if (item is! Map<String, dynamic>) {
@@ -55,11 +60,15 @@ class BookingsApi {
 
   Future<List<Map<String, dynamic>>> listBookingMessages({
     required String bookingId,
-    required String phone,
+    String? phone,
   }) async {
+    final query = <String, dynamic>{};
+    if (phone != null && phone.isNotEmpty) {
+      query['phone'] = phone;
+    }
     final response = await _dio.get<Map<String, dynamic>>(
       '/v1/bookings/$bookingId/messages',
-      queryParameters: {'phone': phone},
+      queryParameters: query,
     );
     final items = response.data?['items'];
     if (items is! List) return const [];
@@ -76,12 +85,16 @@ class BookingsApi {
 
   Future<Map<String, dynamic>> postBookingMessage({
     required String bookingId,
-    required String phone,
+    String? phone,
     required String body,
   }) async {
+    final query = <String, dynamic>{};
+    if (phone != null && phone.isNotEmpty) {
+      query['phone'] = phone;
+    }
     final response = await _dio.post<Map<String, dynamic>>(
       '/v1/bookings/$bookingId/messages',
-      queryParameters: {'phone': phone},
+      queryParameters: query,
       data: {'body': body},
     );
     final item = response.data?['item'];

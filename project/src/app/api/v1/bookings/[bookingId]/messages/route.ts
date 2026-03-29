@@ -14,7 +14,13 @@ import {
 export const dynamic = "force-dynamic";
 
 const phoneQuerySchema = z.object({
-	phone: z.string().min(3).max(30),
+	phone: z.preprocess(
+		(v) =>
+			typeof v !== "string" || v.trim() === ""
+				? undefined
+				: v.trim(),
+		z.string().min(3).max(30).optional(),
+	),
 });
 
 const postBodySchema = z.object({
@@ -71,12 +77,16 @@ export async function GET(
 				request,
 				400,
 				"VALIDATION_ERROR",
-				"Query requires phone matching the booking customer",
+				"Invalid messages query",
 				parsed.error.flatten(),
 			);
 		}
 
-		const rows = await listBookingMessagesForCustomer(id, parsed.data.phone);
+		const rows = await listBookingMessagesForCustomer(
+			id,
+			session.user.id,
+			parsed.data.phone,
+		);
 		if (!rows) {
 			return jsonV1Error(request, 404, "NOT_FOUND", "Booking not found");
 		}
@@ -130,7 +140,7 @@ export async function POST(
 				request,
 				400,
 				"VALIDATION_ERROR",
-				"Query requires phone matching the booking customer",
+				"Invalid messages query",
 				phoneParsed.error.flatten(),
 			);
 		}
@@ -170,6 +180,7 @@ export async function POST(
 
 		const msg = await appendCustomerBookingMessageForB2c(
 			id,
+			session.user.id,
 			phoneParsed.data.phone,
 			trimmed,
 		);

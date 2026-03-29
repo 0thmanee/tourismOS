@@ -28,6 +28,7 @@ import type {
 export async function createBookingForOrganization(
 	organizationId: string,
 	parsed: CreateBookingInput,
+	options?: { travelerUserId?: string | null },
 ): Promise<BookingDetailRow> {
 	const startAt = new Date(parsed.startAtISO);
 	let priceMad = parsed.priceMad;
@@ -127,6 +128,7 @@ export async function createBookingForOrganization(
 		organizationId,
 		customerName: parsed.customerName,
 		customerPhone: parsed.customerPhone,
+		travelerUserId: options?.travelerUserId ?? null,
 		activityTitle,
 		activityId,
 		activityKind,

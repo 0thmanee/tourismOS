@@ -2,13 +2,14 @@ import { bookingMessageSelect } from "~/app/api/bookings/repo/bookings.repo";
 import type { BookingMessageRow } from "~/app/api/bookings/schemas/bookings.schema";
 import { prisma } from "~/lib/db";
 
-import { getTripForPhoneRepo } from "./b2c-trips.repo";
+import { getTripForTravelerRepo } from "./b2c-trips.repo";
 
 export async function listBookingMessagesForCustomer(
 	bookingId: string,
-	phone: string,
+	userId: string,
+	phone?: string | null,
 ): Promise<BookingMessageRow[] | null> {
-	const access = await getTripForPhoneRepo(bookingId, phone);
+	const access = await getTripForTravelerRepo(bookingId, userId, phone);
 	if (!access) return null;
 
 	const rows = await prisma.bookingMessage.findMany({
@@ -21,10 +22,11 @@ export async function listBookingMessagesForCustomer(
 
 export async function appendCustomerBookingMessageForB2c(
 	bookingId: string,
-	phone: string,
+	userId: string,
+	phone: string | null | undefined,
 	body: string,
 ): Promise<BookingMessageRow | null> {
-	const access = await getTripForPhoneRepo(bookingId, phone);
+	const access = await getTripForTravelerRepo(bookingId, userId, phone);
 	if (!access) return null;
 
 	const msg = await prisma.bookingMessage.create({

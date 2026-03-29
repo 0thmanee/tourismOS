@@ -67,9 +67,27 @@ Future<void> refreshBetterAuthClientSession() {
   return _refreshInFlight!;
 }
 
+bool _clientHasUsableBearer() {
+  final s = BetterAuth.instance.client.session;
+  final u = BetterAuth.instance.client.user;
+  return s != null &&
+      u != null &&
+      s.token.isNotEmpty &&
+      u.id.isNotEmpty;
+}
+
 Future<void> _runRefresh() async {
+  final preSession = BetterAuth.instance.client.session;
+  final preUser = BetterAuth.instance.client.user;
+  final hadPreBearer = preSession != null &&
+      preUser != null &&
+      preSession.token.isNotEmpty &&
+      preUser.id.isNotEmpty;
+
   final (pair, failure) = await BetterAuth.instance.client.getSession();
-  if (failure != null || pair == null) {
+  if (failure != null ||
+      pair == null ||
+      (pair.$1 == null || pair.$2 == null)) {
     final fallback = await _hydrateSessionFromRawGetSession();
     if (fallback != null) {
       final (session, user) = fallback;
@@ -77,37 +95,53 @@ Future<void> _runRefresh() async {
       BetterAuth.instance.client.user = user;
       return;
     }
+    // Right after sign-in, get-session can fail briefly while cookies/storage settle.
+    // Do not wipe a session the SDK just populated.
+    if (hadPreBearer) {
+      BetterAuth.instance.client.session = preSession;
+      BetterAuth.instance.client.user = preUser;
+      return;
+    }
     BetterAuth.instance.client.session = null;
     BetterAuth.instance.client.user = null;
     return;
   }
-  final (session, user) = pair;
+  var session = pair.$1!;
+  final user = pair.$2!;
+  if (session.token.isEmpty && hadPreBearer) {
+    session = preSession;
+  }
   BetterAuth.instance.client.session = session;
   BetterAuth.instance.client.user = user;
 }
 
-/// Aligns SharedPreferences session flags with the current Better Auth client state.
+/// Aligns SharedPreferences session flags with the hydrated Better Auth client.
+///
+/// Uses [refreshBetterAuthClientSession] as the **single** source of truth (SDK
+/// `getSession` + raw `/get-session` fallback). Previously this duplicated
+/// `getSession` and called [LaunchController.signOut] on any miss — right after
+/// OAuth/email sign-in that could briefly fail while cookies settled, wiping
+/// prefs and triggering "Signed in, but failed to verify active session."
 Future<void> applyLaunchPrefsFromBetterAuth(LaunchController launch) async {
-  final (pair, failure) = await BetterAuth.instance.client.getSession();
-  var resolvedPair = pair;
-  if (failure != null || pair == null || pair.$2 == null) {
-    final fallback = await _hydrateSessionFromRawGetSession();
-    if (fallback != null) {
-      resolvedPair = fallback;
-    }
-  }
-
-  if (resolvedPair == null || resolvedPair.$2 == null) {
-    BetterAuth.instance.client.session = null;
-    BetterAuth.instance.client.user = null;
-    await launch.signOut();
+  await launch.load();
+  if (launch.isGuest) {
     return;
   }
-  final (session, user) = resolvedPair;
-  BetterAuth.instance.client.session = session;
-  BetterAuth.instance.client.user = user;
 
-  await launch.setSessionReady(guest: false);
+  if (!_clientHasUsableBearer()) {
+    await refreshBetterAuthClientSession();
+  }
+
+  final hasUsableSession = _clientHasUsableBearer();
+
+  if (hasUsableSession) {
+    await launch.setSessionReady(guest: false);
+    return;
+  }
+
+  BetterAuth.instance.client.session = null;
+  BetterAuth.instance.client.user = null;
+  await launch.signOut();
 }
 
 Future<void> signOutEverywhere(LaunchController launch) async {

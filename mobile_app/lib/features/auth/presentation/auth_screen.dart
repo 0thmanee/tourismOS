@@ -96,9 +96,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   Future<void> _apple() async {
     _startLoading(_AuthProvider.apple);
     try {
-      await ref.read(authOrchestratorProvider).signInWithApple(
-            ref.read(launchControllerProvider),
-          );
+      await ref.read(authSessionControllerProvider).signInWithApple();
       await _afterAuthSuccess();
     } catch (e) {
       if (!mounted) return;
@@ -112,9 +110,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   Future<void> _guest() async {
     _startLoading(_AuthProvider.guest);
-    await ref
-        .read(authOrchestratorProvider)
-        .continueAsGuest(ref.read(launchControllerProvider));
+    await ref.read(authSessionControllerProvider).continueAsGuest();
     if (!mounted) return;
     _stopLoading();
     context.go('/splash');

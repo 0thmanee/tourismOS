@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/better_auth_user_api.dart';
+import '../../../core/debug/session_debug_panel.dart';
 import '../../../core/state/launch_controller.dart';
 import '../../../core/state/launch_providers.dart';
 import '../../../core/widgets/app_main_app_bar.dart';
@@ -40,7 +41,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _signOut() async {
-    final launch = ref.read(launchControllerProvider);
     await ref.read(authSessionControllerProvider).signOutAll();
     clearTripsLocalCache(ref);
     if (mounted) context.go('/splash');
@@ -357,6 +357,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
             ),
             if (kDebugMode) ...[
+              const SizedBox(height: 12),
+              const SessionDebugPanel(),
               const SizedBox(height: 12),
               _ProfileEntry(
                 icon: Icons.restart_alt_rounded,

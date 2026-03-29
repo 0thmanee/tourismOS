@@ -14,6 +14,7 @@ import {
 } from "~/app/api/v1/_lib/trip.mapper";
 import { mapCreateBookingErrorToResponse } from "~/app/api/v1/bookings/create-booking-http";
 import { getTripRowByIdForB2c } from "~/app/api/v1/bookings/repo/b2c-trips.repo";
+import { getV1AuthSession } from "~/app/api/v1/_lib/auth";
 import { bookingCreateBodySchema } from "~/app/api/v1/bookings/schemas/booking-create-body.schema";
 import { getMarketplaceExperienceById } from "~/app/api/v1/experiences/repo/marketplace-experiences.repo";
 
@@ -44,6 +45,9 @@ export async function POST(request: Request) {
 		}
 
 		const body = parsed.data;
+		const session = await getV1AuthSession(request);
+		const travelerUserId = session?.user?.id ?? null;
+
 		const activity = await getMarketplaceExperienceById(body.experienceId);
 		if (!activity) {
 			return jsonV1Error(
@@ -61,6 +65,9 @@ export async function POST(request: Request) {
 		const detail = await createBookingForOrganization(
 			organizationId,
 			createInput,
+			travelerUserId
+				? { travelerUserId }
+				: undefined,
 		);
 
 		const row = await getTripRowByIdForB2c(detail.id);

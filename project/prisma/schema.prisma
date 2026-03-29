@@ -50,6 +50,8 @@ model User {
   accounts         Account[]
   members          Member[]
   profile          Profile?
+  /** B2C app: bookings created while signed in as this traveler */
+  travelerBookings Booking[] @relation("BookingTraveler")
 
   @@map("user")
 }
@@ -256,6 +258,10 @@ model Booking {
   id             String   @id @default(cuid())
   organizationId String
 
+  /** When set, this booking is owned by the signed-in B2C user (see list/detail access). */
+  travelerUserId String?
+  travelerUser   User?    @relation("BookingTraveler", fields: [travelerUserId], references: [id], onDelete: SetNull)
+
   customerId String
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
@@ -295,6 +301,7 @@ model Booking {
   @@index([status])
   @@index([startAt])
   @@index([activityId])
+  @@index([travelerUserId])
   @@map("booking")
 }
 

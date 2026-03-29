@@ -8,8 +8,7 @@ final tripRemoteDetailProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>, String>((ref, bookingId) async {
   ref.watch(b2cTravelerPhoneProvider);
   final api = ref.watch(bookingsApiProvider);
-  final phone =
-      resolveB2cTripsPhoneFromSaved(ref.read(b2cTravelerPhoneProvider));
+  final phone = b2cTripsPhoneQueryHint(ref.read(b2cTravelerPhoneProvider));
   final dto = await api.fetchTrip(bookingId: bookingId, phone: phone);
   return tripItemFromTripDto(dto);
 });

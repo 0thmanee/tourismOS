@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/auth/auth_orchestrator.dart';
+import '../../../core/auth/auth_session_controller.dart';
 import '../../../core/config/app_env.dart';
 import '../../../core/state/launch_providers.dart';
 import '../../../core/widgets/app_main_app_bar.dart';
@@ -67,10 +67,9 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
     }
     if (mounted) setState(() => _remoteTripsFailed = false);
     try {
-      final phone = resolveB2cTripsPhoneFromSaved(
-        ref.read(b2cTravelerPhoneProvider),
-      );
-      final raw = await ref.read(bookingsApiProvider).listTrips(phone: phone);
+      final phone = b2cTripsPhoneQueryHint(ref.read(b2cTravelerPhoneProvider));
+      final raw =
+          await ref.read(bookingsApiProvider).listTrips(phone: phone);
       final mapped = raw.map(tripItemFromTripDto).toList();
       ref.read(tripsStoreProvider.notifier).replaceAll(mapped);
     } catch (_) {
@@ -88,7 +87,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
     ref.watch(authSessionControllerProvider);
     ref.watch(launchControllerProvider);
 
-    ref.listen<AuthOrchestrator>(authOrchestratorProvider, (prev, next) {
+    ref.listen<AuthSessionController>(authSessionControllerProvider, (prev, next) {
       if (!AppEnv.useRemoteTrips) return;
       if (next.authStatus != AuthStatus.authenticated) return;
       if (prev == null) return;

@@ -42,7 +42,7 @@ class AppEnv {
     defaultValue: false,
   );
 
-  /// When true, Trips list/detail load from `GET /api/v1/trips*` (requires `phone` query — see docs).
+  /// When true, Trips list/detail load from `GET /api/v1/trips*` (Bearer session; optional `phone` for legacy rows).
   /// Expect server-backed bookings; mock-only trips are replaced on load.
   static const useRemoteTrips = bool.fromEnvironment(
     'USE_REMOTE_TRIPS',

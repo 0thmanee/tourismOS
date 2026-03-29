@@ -6,7 +6,7 @@ import {
 } from "~/app/api/v1/_lib/http";
 import { getV1AuthSession } from "~/app/api/v1/_lib/auth";
 import { bookingRowToTripDTO } from "~/app/api/v1/_lib/trip.mapper";
-import { getTripForPhoneRepo } from "~/app/api/v1/bookings/repo/b2c-trips.repo";
+import { getTripForTravelerRepo } from "~/app/api/v1/bookings/repo/b2c-trips.repo";
 
 export const dynamic = "force-dynamic";
 
@@ -53,12 +53,16 @@ export async function GET(
 				request,
 				400,
 				"VALIDATION_ERROR",
-				"Query requires phone matching the booking customer",
+				"Invalid trip detail query",
 				parsed.error.flatten(),
 			);
 		}
 
-		const row = await getTripForPhoneRepo(id, parsed.data.phone);
+		const row = await getTripForTravelerRepo(
+			id,
+			session.user.id,
+			parsed.data.phone,
+		);
 		if (!row) {
 			return jsonV1Error(request, 404, "NOT_FOUND", "Trip not found");
 		}
